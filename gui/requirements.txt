@@ -1,3 +1,4 @@
+furl
 PyYAML==3.11
 argparse==1.2.1
 backports-abc==0.4

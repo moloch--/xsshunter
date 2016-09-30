@@ -1,144 +1,159 @@
-from initiate_database import *
-from urlparse import urlparse
-import binascii
-import bcrypt
-import os
 import re
+from hashlib import sha256
+from os import urandom
+from urlparse import urlparse
 
-class User(Base):
-    __tablename__ = 'users'
+import bcrypt
+from sqlalchemy import Column
+from sqlalchemy.types import Boolean, String, Text
 
-    id = Column(String(100), primary_key=True)
-    full_name = Column(String(120))
-    username = Column(String(80))
-    password = Column(String(120))
-    email = Column(String(120))
-    domain = Column(String(120))
-    pgp_key = Column(Text())
+from models import DBSession
+from models.base import DatabaseObject
+
+
+class User(DatabaseObject):
+
+    EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
+    DOMAIN_REGEX = r"^[A-Za-z0-9]+$"
+
+    _full_name = Column(String(120))
+    _username = Column(String(80))
+    _password = Column(String(120))
+    _email = Column(String(120))
+    _domain = Column(String(120))
+    _pgp_key = Column(Text())
     password_reset_token = Column(String(120))
-    is_premium = Column(Boolean())
-    email_enabled = Column(Boolean())
-    chainload_uri = Column(Text())
-    owner_correlation_key = Column(String(100))
-    page_collection_paths_list = Column(Text()) # Done this way to allow users to just paste and share relative page lists
+    email_enabled = Column(Boolean, default=False)
+    _chainload_uri = Column(Text())
+    owner_correlation_key = Column(String(100), default=lambda: urandom(50).encode('hex'))
 
-    def __init__( self ):
-        self.generate_user_id()
-        self.generate_owner_correlation_key()
+    # Done this way to allow users to just paste and share relative page lists
+    _page_collection_paths_list = Column(Text())
 
-    def set_fullname( self, in_fullname ):
-        self.full_name = str( in_fullname ).strip()
-        return True
+    @classmethod
+    def by_domain(cls, domain):
+        return DBSession().query(cls).filter_by(_domain=domain).first()
 
-    def set_username( self, in_username ):
-        self.username = str( in_username ).strip()
-        return True
+    @staticmethod
+    def hash_password(password, salt=None):
+        """
+        BCrypt has a max lenght of 72 chars, we first throw the plaintext thru
+        SHA256 to support passwords greater than 72 chars.
+        """
+        if salt is None:
+            salt = bcrypt.gensalt(10)
+        return bcrypt.hashpw(sha256(password).hexdigest(), salt)
 
-    def set_password( self, in_password ):
-        self.password = self._get_bcrypt_hash( in_password )
-        return True
+    def compare_password(self, in_password):
+        return self.hash_password(in_password, self.password) == self.password
 
-    def set_pgp_key( self, in_pgp_key ):
-        self.pgp_key = str( in_pgp_key ).strip()
-        return True
+    def generate_password_reset_key(self):
+        self.password_reset_token = urandom(60).encode('hex')
 
-    def set_email( self, in_email ):
-        in_email = str( in_email ).strip()
-        if bool( re.search( r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$", in_email, flags=0 ) ):
-            self.email = in_email
-            return True
-        return False
+    @property
+    def full_name(self):
+        return self._full_name
 
-    def set_domain( self, set_domain ):
-        if self.domain == set_domain:
-            return True
+    @full_name.setter
+    def full_name(self, in_fullname):
+        assert isinstance(in_fullname, basestring)
+        self._full_name = in_fullname[:120].strip()
 
-        if not bool( re.search( r"^[A-Za-z0-9]+$", set_domain, flags=0 ) ):
-            return False
+    @property
+    def username(self):
+        return self._username
 
-        set_domain = str( set_domain ).strip()
-        domain_exists = session.query( User ).filter_by( domain=set_domain ).first()
+    @username.setter
+    def username(self, in_username):
+        assert isinstance(in_username, basestring)
+        self.username = in_username[:80].strip()
 
-        if domain_exists == None:
-            self.domain = set_domain
-            return True
-        return False
+    @property
+    def password(self):
+        return self._password
 
-    def set_email_enabled( self, in_email_enabled ):
-        self.email_enabled = in_email_enabled
-        return True
+    @password.setter
+    def password(self, in_password):
+        self._password = self.hash_password(in_password)
 
-    def set_chainload_uri( self, in_chainload_uri ):
-        parsed_url = urlparse( in_chainload_uri )
-        if bool( parsed_url.scheme ) or in_chainload_uri == "":
-            self.chainload_uri = in_chainload_uri
-            return True
-        return False
+    @property
+    def pgp_key(self):
+        return self._pgp_key
 
-    def set_page_collection_paths_list( self, in_paths_list_text ):
-        self.page_collection_paths_list = in_paths_list_text.strip()
-        return True
+    @pgp_key.setter
+    def pgp_key(self, in_pgp_key):
+        self._pgp_key = in_pgp_key.strip()
 
-    def set_attribute( self, attribute, value ):
-        if attribute == "password":
-            return self.set_password( value )
-        if attribute == "full_name":
-            return self.set_fullname( value )
-        if attribute == "username":
-            return self.set_username( value )
-        if attribute == "email":
-            return self.set_email( value )
-        if attribute == "domain":
-            return self.set_domain( value )
-        if attribute == "pgp_key":
-            return self.set_pgp_key( value )
-        if attribute == "email_enabled":
-            return self.set_email_enabled( value )
-        if attribute == "chainload_uri":
-            return self.set_chainload_uri( value )
-        if attribute == "page_collection_paths_list":
-            return self.set_page_collection_paths_list( value )
+    @property
+    def email(self):
+        return self._email
 
-    def get_page_collection_path_list( self ):
-        if self.page_collection_paths_list == None:
+    @email.setter
+    def email(self, in_email):
+        in_email = in_email.strip()
+        if re.search(self.EMAIL_REGEX, in_email, flags=0):
+            self._email = in_email
+        else:
+            raise ValueError("Not a valid email")
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @domain.setter
+    def domain(self, set_domain):
+        set_domain = set_domain.lower().strip()
+
+        # Short-cut if domain is the same
+        if self._domain == set_domain:
+            return
+
+        # Check for only valid characters
+        if not re.search(self.DOMAIN_REGEX, set_domain, flags=0):
+            raise ValueError("Invalid domain")
+
+        # Check for duplicates
+        if self.by_domain(set_domain) is not None:
+            raise ValueError("Invalid domain")
+        else:
+            self._domain = set_domain
+
+    @property
+    def chainload_uri(self):
+        return self._chainload_uri
+
+    @chainload_uri.setter
+    def chainload_uri(self, in_chainload_uri):
+        if len(in_chainload_uri) <= 3:
+            raise ValueError("URI too short")
+        parsed_url = urlparse(in_chainload_uri)
+        if parsed_url.scheme:
+            self._chainload_uri = in_chainload_uri
+
+    @property
+    def page_collection_paths_list(self):
+        if self.page_collection_paths_list is None:
             return []
+        lines = self.page_collection_paths_list.split("\n")
+        page_list = [line.strip() for line in lines]
+        return filter(lambda line: line != "", page_list)
 
-        tmp_pages_list = self.page_collection_paths_list.split( "\n" )
-        page_list = []
+    @page_collection_paths_list.setter
+    def page_collection_paths_list(self, in_paths_list_text):
+        self._page_collection_paths_list = in_paths_list_text.strip()
 
-        for page in tmp_pages_list:
-            page = page.strip()
-            if page != "":
-                page_list.append( page )
-
-        return page_list
-
-    def get_user_blob( self ):
-        exposed_attributes = [ "full_name", "email", "username", "pgp_key", "domain", "email_enabled", "chainload_uri", "owner_correlation_key", "page_collection_paths_list" ]
-        return_dict = {}
-
-        for attribute in exposed_attributes:
-            return_dict[ attribute ] = getattr( self, attribute )
-
-        return return_dict
-
-    def generate_user_id( self ):
-        self.id = binascii.hexlify(os.urandom(50))
-
-    def generate_password_reset_key( self ):
-        self.password_reset_token = binascii.hexlify(os.urandom(60))
-
-    def generate_owner_correlation_key( self ):
-        self.owner_correlation_key = binascii.hexlify(os.urandom(50))
-
-    def compare_password( self, in_password ):
-        return ( bcrypt.hashpw( str( in_password.encode( 'utf-8' ) ), str( self.password.encode( 'utf-8' ) ) ) == self.password )
-
-    def update( self ):
-        session.commit()
-
-    def _get_bcrypt_hash( self, input_string ):
-        return bcrypt.hashpw( str( input_string ), bcrypt.gensalt( 10 ) )
+    def get_user_blob(self):
+        return {
+            "full_name": self.full_name,
+            "email": self.email,
+            "username": self.username,
+            "pgp_key": self.pgp_key,
+            "domain": self.domain,
+            "email_enabled": self.email_enabled,
+            "chainload_uri": self.chainload_uri,
+            "owner_correlation_key": self.owner_correlation_key,
+            "page_collection_paths_list": self.page_collection_paths_list
+        }
 
     def __str__(self):
         return self.username + " - ( " + self.full_name + " )"

@@ -1,31 +1,22 @@
-from initiate_database import *
-import binascii
-import bcrypt
-import os
+from sqlalchemy import Column
+from sqlalchemy.types import String, Text
 
-class CollectedPage(Base):
-    __tablename__ = 'collected_pages'
+from models.base import DatabaseObject
 
-    id = Column(String(100), primary_key=True)
+
+class CollectedPage(DatabaseObject):
+
     uri = Column(Text())
     page_html = Column(Text())
     owner_id = Column(String(100))
-    timestamp = Column(Integer())
 
-    def __init__( self ):
-        self.generate_injection_id()
+    def to_dict(self):
+        return {
+            "uri": self.uri,
+            "id": self.id,
+            "page_html": self.page_html,
+            "timestamp": str(self.created)
+        }
 
-    def generate_injection_id( self ):
-        self.id = binascii.hexlify(os.urandom(50))
-
-    def to_dict( self ):
-        exposed_attributes = [ "uri", "id", "page_html", "timestamp" ]
-        return_dict = {}
-
-        for attribute in exposed_attributes:
-            return_dict[ attribute ] = getattr( self, attribute )
-
-        return return_dict
-
-    def __str__( self ):
+    def __str__(self):
         return self.id
