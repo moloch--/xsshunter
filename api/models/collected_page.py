@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+@author: moloch, mandatory
+Copyright 2015
+"""
+
 from sqlalchemy import Column
 from sqlalchemy.types import String, Text
 

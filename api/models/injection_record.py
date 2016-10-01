@@ -1,11 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+@author: moloch, mandatory
+Copyright 2015
+"""
 
 from sqlalchemy import Column
-from sqlalchemy.types import BigInteger, Integer, String, Text
+from sqlalchemy.types import BigInteger, String, Text
 
+from models import DBSession
 from models.base import DatabaseObject
 
 
 class Injection(DatabaseObject):
+
+    owner_id = Column()
 
     content_type = Column(String(100))  # JavaScript/Image
     vulnerable_page = Column(String(3000))
@@ -16,9 +24,23 @@ class Injection(DatabaseObject):
     dom = Column(Text())
     origin = Column(String(300))
     screenshot = Column(String(300))
-    owner_id = Column(String(100))
     browser_time = Column(BigInteger())
     correlated_request = Column(Text())
+
+    @classmethod
+    def by_owner(cls, owner, limit=100, offset=0):
+        return DBSession().query(cls).filter_by(
+            owner_id=owner.id
+        ).order_by(
+            cls.created.desc()
+        ).limit(limit).offset(offset)
+
+    @classmethod
+    def by_owner_and_id(cls, owner, injection_id):
+        return DBSession.query(cls).filter(
+            cls.owner_id == owner.id,
+            cls.id == injection_id
+        ).first()
 
     def get_injection_blob(self):
         return {

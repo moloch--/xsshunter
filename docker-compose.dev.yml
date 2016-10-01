@@ -1,0 +1,38 @@
+#
+#  > This is a Docker Compose file for a DEVEL/DEBUG setup
+#  *** DO NOT USE THIS IN PRODUCTION IT IS VERY INSECURE ***
+#
+
+version: '2'
+
+services:
+
+  sql:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=xsshunter
+      - POSTGRES_USER=xsshunter
+      - POSTGRES_PASSWORD=badpassword
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./api/
+    environment:
+      - API_LISTEN_PORT=8888
+      - API_DEBUG=1
+      - API_COOKIE_SECRET=badsecret
+    volumes:
+      - ./logs:/opt/xsshunter/logs:rw
+    expose:
+      - "8888"
+    depends_on:
+      - sql
+
+  web:
+    build: ./gui/
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api

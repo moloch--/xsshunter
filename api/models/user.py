@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+@author: moloch, mandatory
+Copyright 2015
+"""
+
 import re
 from hashlib import sha256
 from os import urandom
@@ -14,7 +20,7 @@ from models.base import DatabaseObject
 class User(DatabaseObject):
 
     EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
-    DOMAIN_REGEX = r"^[A-Za-z0-9]+$"
+    DOMAIN_REGEX = r"^[a-z0-9]+$"
 
     _full_name = Column(String(120))
     _username = Column(String(80))
@@ -102,7 +108,7 @@ class User(DatabaseObject):
 
     @domain.setter
     def domain(self, set_domain):
-        set_domain = set_domain.lower().strip()
+        set_domain = ''.join(set_domain.lower().split())
 
         # Short-cut if domain is the same
         if self._domain == set_domain:

@@ -1,8 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+@author: moloch, mandatory
+Copyright 2015
+"""
+
 from sqlalchemy import Column
-from sqlalchemy.types import Integer, String, Text
+from sqlalchemy.types import String, Text
+
+from models import DatabaseObject
 
 
-class InjectionRequest(Base):
+class InjectionRequest(DatabaseObject):
 
     request = Column(Text())
     injection_key = Column(String(100))

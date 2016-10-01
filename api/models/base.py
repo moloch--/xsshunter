@@ -62,9 +62,9 @@ class _DatabaseObject(object):
         return DBSession().query(cls).filter_by(_id=guid).first()
 
 
-
 # Create a usable class with SQLAlchemy's declarative_base
 DatabaseObject = declarative_base(cls=_DatabaseObject)
+
 
 # Place a hook for `updated' attribute
 # pylint: disable=W0613

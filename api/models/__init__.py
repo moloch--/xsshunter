@@ -11,7 +11,6 @@ from tornado.options import options
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from libs.ConsoleColors import R, W, BLU, BOLD
 from libs.DatabaseConnection import DatabaseConnection
 
 
@@ -30,8 +29,7 @@ if options.db_debug:
     def after_cursor_execute(conn, cursor, statement, parameters, context,
                              executemany):
         total = time.time() - conn.info['query_start_time'].pop(-1)
-        color = R if total > 0.01 else BLU
-        logging.debug("Total query time: %s%s%f%s", BOLD, color, total, W)
+        logging.debug("Total query time: %f", total)
 
 
 db_connection = DatabaseConnection(database=options.sql_database,
