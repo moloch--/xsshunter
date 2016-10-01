@@ -5,15 +5,16 @@ import logging
 
 from tornado.options import define, options
 
+
 # API Settings
-define("origin",
+define("domain",
        group="application",
-       default=os.environ.get('API_ORIGIN', "wss://localhost"),
-       help="validate websocket connections against this origin")
+       default=os.environ.get('XSSHUNTER_DOMAIN', "localhost"),
+       help="the domain the api is running on")
 
 define("listen_port",
        group="application",
-       default=os.environ.get('API_LISTEN_PORT', "8888"),
+       default=os.environ.get('XSSHUNTER_LISTEN_PORT', "8888"),
        help="run instances starting the given port",
        type=str)
 
@@ -23,20 +24,33 @@ define("x_headers",
        help="honor the `X-FORWARDED-FOR` and `X-REAL-IP` http headers",
        type=bool)
 
+
+# Email settings
+define("email_from",
+       group="email",
+       default=os.environ.get('XSSHUNTER_EMAIL_FROM', "xsshunter@example.com"),
+       help="email from header")
+
+define("mailgun_sending_domain",
+       group="email",
+       default=os.environ.get('XSSHUNTER_MAILGUN_SENDING_DOMAIN', "example.com"),
+       help="the domain associated with the mailgun account")
+
+
 # Database settings
 define("sql_dialect",
        group="database",
-       default=os.environ.get("API_SQL_DIALECT", "postgres"),
+       default=os.environ.get("XSSHUNTER_SQL_DIALECT", "postgres"),
        help="define the type of database (mysql|postgres|sqlite)")
 
 define("sql_database",
        group="database",
-       default=os.environ.get("API_SQL_DATABASE", "app"),
+       default=os.environ.get("XSSHUNTER_SQL_DATABASE", "app"),
        help="the sql database name")
 
 define("sql_host",
        group="database",
-       default=os.environ.get("API_SQL_HOST", "127.0.0.1"),
+       default=os.environ.get("XSSHUNTER_SQL_HOST", "127.0.0.1"),
        help="database sever hostname")
 
 define("sql_port",
@@ -46,24 +60,25 @@ define("sql_port",
 
 define("sql_user",
        group="database",
-       default=os.environ.get("API_SQL_USER", "app"),
+       default=os.environ.get("XSSHUNTER_SQL_USER", "app"),
        help="database username")
 
 define("sql_password",
        group="database",
-       default=os.environ.get("API_SQL_PASSWORD", "badpassword"),
+       default=os.environ.get("XSSHUNTER_SQL_PASSWORD", "badpassword"),
        help="database password, if applicable")
 
 define("sql_pool_recycle",
        group="database",
-       default=int(os.environ.get("API_SQL_POOL_RECYCLE", 3600)),
+       default=int(os.environ.get("XSSHUNTER_SQL_POOL_RECYCLE", 3600)),
        help="timeout to refresh dbapi connections (seconds)",
        type=int)
+
 
 # Cookie settings
 define("cookie_secret",
        group="secret",
-       default=os.environ.get("API_COOKIE_SECRET", os.urandom(32).encode('hex')),
+       default=os.environ.get("XSSHUNTER_COOKIE_SECRET", os.urandom(32).encode('hex')),
        help="the cookie hmac secret",
        type=str)
 

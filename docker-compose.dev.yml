@@ -19,9 +19,9 @@ services:
   api:
     build: ./api/
     environment:
-      - API_LISTEN_PORT=8888
-      - API_DEBUG=1
-      - API_COOKIE_SECRET=badsecret
+      - XSSHUNTER_LISTEN_PORT=8888
+      - XSSHUNTER_DEBUG=1
+      - XSSHUNTER_COOKIE_SECRET=badsecret
     volumes:
       - ./logs:/opt/xsshunter/logs:rw
     expose:

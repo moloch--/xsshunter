@@ -1,5 +1,7 @@
 
+import os
 import urllib
+from tornado.options import options
 
 from handlers.base import BaseHandler
 from models import DBSession
@@ -25,13 +27,8 @@ class XSSPayloadFiresHandler(BaseHandler):
         results = Injection.by_owner(user, limit, offset)
         total = len(user.injections)
 
-        return_list = []
-
-        for result in results:
-            return_list.append(result.get_injection_blob())
-
         return_dict = {
-            "results": return_list,
+            "results": [result.get_injection_blob() for result in results],
             "total": total,
             "success": True
         }
@@ -59,10 +56,10 @@ class CallbackHandler(BaseHandler):
 
         if "-----BEGIN PGP MESSAGE-----" in self.request.body:
             if owner.email_enabled:
-                self.logit( "User " + owner.username + " just got a PGP encrypted XSS callback, passing it along." )
-                send_javascript_pgp_encrypted_callback_message( self.request.body, owner.email )
+                self.logit("User " + owner.username + " just got a PGP encrypted XSS callback, passing it along.")
+                self.pgp_encrypted_callback_message(self.request.body, owner.email)
         else:
-            callback_data = json.loads( self.request.body )
+            callback_data = json.loads(self.request.body)
             callback_data['ip'] = self.request.remote_ip
             injection_db_record = self.record_callback_in_database( callback_data, self )
             self.logit( "User " + owner.username + " just got an XSS callback for URI " + injection_db_record.vulnerable_page )
@@ -73,16 +70,16 @@ class CallbackHandler(BaseHandler):
 
     def send_email( to, subject, body, attachment_file, body_type="html" ):
         if body_type == "html":
-            body += "<br /><img src=\"https://api." + settings["domain"] + "/" + attachment_file.encode( "utf-8" ) + "\" />" # I'm so sorry.
+            body += "<br /><img src=\"https://api." + options.domain + "/" + attachment_file.encode( "utf-8" ) + "\" />" # I'm so sorry.
 
         email_data = {
-            "from": urllib.quote_plus(settings["email_from"]),
+            "from": urllib.quote_plus(options.email_from),
             "to": urllib.quote_plus(to),
             "subject": urllib.quote_plus(subject),
             body_type: urllib.quote_plus(body),
         }
 
-        thread = unirest.post( "https://api.mailgun.net/v3/" + settings["mailgun_sending_domain"] + "/messages",
+        thread = unirest.post( "https://api.mailgun.net/v3/" + options.mailgun_sending_domain + "/messages",
             headers={"Accept": "application/json"},
             params=email_data,
             auth=("api", settings["mailgun_api_key"] ),
@@ -90,18 +87,18 @@ class CallbackHandler(BaseHandler):
 
 
     def send_javascript_callback_message(self, email, injection_db_record):
-        loader = tornado.template.Loader( "templates/" )
+        loader = tornado.template.Loader("templates/")
 
         injection_data = injection_db_record.get_injection_blob()
 
-        email_html = loader.load("xss_email_template.htm").generate( injection_data=injection_data, domain=settings["domain"] )
+        email_html = loader.load("xss_email_template.htm").generate(injection_data=injection_data, domain=options.domain)
         return send_email(email, "[XSS Hunter] XSS Payload Fired On " + injection_data['vulnerable_page'], email_html, injection_db_record.screenshot )
 
-    def send_javascript_pgp_encrypted_callback_message(self, email_data, email):
+    def pgp_encrypted_callback_message(self, email_data, email):
         return send_email( email, "[XSS Hunter] XSS Payload Message (PGP Encrypted)", email_data, False, "text" )
 
     def record_callback_in_database(self, callback_data, request_handler):
-        screenshot_file_path = upload_screenshot( callback_data["screenshot"] )
+        screenshot_file_path = self.upload_screenshot(callback_data["screenshot"])
 
         injection = Injection(vulnerable_page=callback_data["uri"].encode("utf-8"),
             victim_ip=callback_data["ip"].encode("utf-8"),
@@ -127,13 +124,13 @@ class CallbackHandler(BaseHandler):
         else:
             injection.correlated_request = "Could not correlate XSS payload fire with request!"
 
-        DBSession().add( injection )
+        DBSession().add(injection)
         DBSession().commit()
 
         return injection
 
-    def upload_screenshot(self, base64_screenshot_data_uri ):
-        screenshot_filename = "uploads/xsshunter_screenshot_" + binascii.hexlify( os.urandom( 100 ) ) + ".png"
+    def upload_screenshot(self, base64_screenshot_data_uri):
+        screenshot_filename = "uploads/xsshunter_screenshot_" + os.urandom(100).encode('hex') + ".png"
         screenshot_file_handler = data_uri_to_file( base64_screenshot_data_uri )
         local_file_handler = open(screenshot_filename, "w")  # Async IO http://stackoverflow.com/a/13644499/1195812
         local_file_handler.write( screenshot_file_handler.read() )

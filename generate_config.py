@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import binascii
 import yaml
 import os
@@ -20,7 +21,7 @@ server {
     proxy_set_header X-Forwarded-For $remote_addr;
 
     return 307 https://$host$request_uri;
-    client_max_body_size 500M; # In case we have an extra large payload capture 
+    client_max_body_size 500M; # In case we have an extra large payload capture
 }
 
 server {
@@ -63,7 +64,7 @@ server {
     proxy_set_header X-Forwarded-For $remote_addr;
 
     return 307 https://api.fakedomain.com$request_uri;
-    client_max_body_size 500M; # In case we have an extra large payload capture 
+    client_max_body_size 500M; # In case we have an extra large payload capture
 }
 
 server {
@@ -102,16 +103,16 @@ settings = {
 }
 
 print """
- __   __ _____ _____   _    _             _            
- \ \ / // ____/ ____| | |  | |           | |           
-  \ V /| (___| (___   | |__| |_   _ _ __ | |_ ___ _ __ 
+ __   __ _____ _____   _    _             _
+ \ \ / // ____/ ____| | |  | |           | |
+  \ V /| (___| (___   | |__| |_   _ _ __ | |_ ___ _ __
    > <  \___ \\\\___ \  |  __  | | | | '_ \| __/ _ \ '__|
-  / . \ ____) |___) | | |  | | |_| | | | | ||  __/ |   
- /_/ \_\_____/_____/  |_|  |_|\__,_|_| |_|\__\___|_|   
-                                                       
-                                                       
+  / . \ ____) |___) | | |  | | |_| | | | | ||  __/ |
+ /_/ \_\_____/_____/  |_|  |_|\__,_|_| |_|\__\___|_|
+
+
                                            Setup Utility
-    """
+"""
 
 print "What is the base domain name you will be using? "
 print "(ex. localhost, www.example.com)"

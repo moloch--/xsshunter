@@ -3,6 +3,8 @@ import json
 
 from handlers.base import BaseHandler
 from models import DBSession
+from models.user import User
+from probe import Probe
 
 
 class HomepageHandler(BaseHandler):
@@ -14,30 +16,21 @@ class HomepageHandler(BaseHandler):
 
     def get(self, path):
         domain = self.request.headers.get('Host')
-        user = self.get_user_from_subdomain()
+        user = User.by_domain(domain)
 
-        if user is None:
-            self.throw_404()
-            return
-
-        with open("./probe.js") as fp:
-            new_probe = fp.read()
-        new_probe.replace('[HOST_URL]', "https://" + domain) \
-            .replace('[PGP_REPLACE_ME]', json.dumps(user.pgp_key)) \
-            .replace('[CHAINLOAD_REPLACE_ME]', json.dumps(user.chainload_uri)) \
-            .replace('[COLLECT_PAGE_LIST_REPLACE_ME]', json.dumps(user.get_page_collection_path_list()))
-
-        if len(user.pgp_key):
-            with open("templates/pgp_encrypted_template.txt", "r") as template_handler:
-                new_probe = new_probe.replace('[TEMPLATE_REPLACE_ME]', json.dumps(template_handler.read()))
+        if user is not None:
+            self.send_probe(user)
         else:
-            new_probe = new_probe.replace('[TEMPLATE_REPLACE_ME]', json.dumps(""))
+            self.throw_404()
 
+    def send_probe(self, user):
+        probe_id = ""
         if self.request.uri != "/":
             probe_id = self.request.uri.split("/")[1]
-            self.write(new_probe.replace("[PROBE_ID]", probe_id))
-        else:
-            self.write(new_probe)
+        # Render a personalized probe.js
+        js = Probe.js(probe_id, user.domain, user.pgp_key,
+                      user.chainload_uri, user.page_collection_paths_list)
+        self.write(js)
 
 
 class UserInformationHandler(BaseHandler):
@@ -57,9 +50,11 @@ class UserInformationHandler(BaseHandler):
         user_data = json.loads(self.request.body)
 
         # Mass assignment is dangerous mmk
-        allowed_attributes = ["pgp_key", "full_name", "email", "password", "email_enabled", "chainload_uri", "page_collection_paths_list" ]
+        allowed_attributes = [
+            "pgp_key", "full_name", "email", "password",
+            "email_enabled", "chainload_uri", "page_collection_paths_list"
+        ]
         invalid_attribute_list = []
-        tmp_domain = user.domain
         for key, value in user_data.iteritems():
             if key in allowed_attributes:
                 return_data = user.set_attribute(key, user_data.get(key))
