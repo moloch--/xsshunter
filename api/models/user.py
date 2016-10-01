@@ -8,11 +8,13 @@ import re
 from hashlib import sha256
 from os import urandom
 from urlparse import urlparse
+from datetime import datetime, timedelta
 
 import bcrypt
 from sqlalchemy import Column
 from sqlalchemy.orm import backref, relationship
-from sqlalchemy.types import Boolean, String, Text
+from sqlalchemy.types import Boolean, String, Text, DateTime
+from sqlalchemy_utils import URLType
 
 from models import DBSession
 from models.base import DatabaseObject
@@ -22,6 +24,7 @@ class User(DatabaseObject):
 
     EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
     DOMAIN_REGEX = r"^[a-z0-9]+$"
+    LINUX_EPOCH = datetime(1970, 1, 1, 0, 0)
 
     _full_name = Column(String(120))
     _username = Column(String(80))
@@ -29,10 +32,15 @@ class User(DatabaseObject):
     _email = Column(String(120))
     _domain = Column(String(120))
     _pgp_key = Column(Text())
-    password_reset_token = Column(String(120))
     email_enabled = Column(Boolean, default=False)
-    _chainload_uri = Column(Text())
-    owner_correlation_key = Column(String(64), default=lambda: urandom(32).encode('hex'))
+    _chainload_uri = Column(URLType())
+
+    _password_reset_token_expires = Column(DateTime, default=LINUX_EPOCH)
+    _password_reset_token = Column(String(64), nullable=False,
+                                   default=lambda: urandom(32).encode('hex'))
+
+    owner_correlation_key = Column(String(64), nullable=False,
+                                   default=lambda: urandom(32).encode('hex'))
 
     injections = relationship("InjectionRecord",
                               backref=backref("user", lazy="select"),
@@ -49,6 +57,11 @@ class User(DatabaseObject):
     def by_domain(cls, domain):
         return DBSession().query(cls).filter_by(_domain=domain).first()
 
+    @classmethod
+    def by_username(cls, username):
+        username = username[:80].strip().encode('ascii', 'ignore')
+        return DBSession().query(cls).filter_by(_username=username).first()
+
     @staticmethod
     def hash_password(password, salt=None):
         """
@@ -62,8 +75,23 @@ class User(DatabaseObject):
     def compare_password(self, in_password):
         return self.hash_password(in_password, self.password) == self.password
 
-    def generate_password_reset_key(self):
-        self.password_reset_token = urandom(60).encode('hex')
+    def generate_password_reset_token(self):
+        """
+        Generates a new password reset token and returns it, also save the new
+        token as a hash in the database.
+        """
+        token = urandom(32).encode('hex')
+        self._password_reset_token = sha256(token).hexdigest()
+        self._password_reset_token_expires = datetime.utcnow() + timedelta(days=1)
+        return token
+
+    def validate_password_reset_token(self, token):
+        """
+        You can't do a remote timing attack since we hash the input token
+        """
+        if datetime.utcnow() < self._password_reset_token_expries:
+            return sha256(token).hexdigest() == self._password_reset_token
+        return False
 
     @property
     def full_name(self):
@@ -72,7 +100,7 @@ class User(DatabaseObject):
     @full_name.setter
     def full_name(self, in_fullname):
         assert isinstance(in_fullname, basestring)
-        self._full_name = in_fullname[:120].strip()
+        self._full_name = in_fullname[:120].strip().encode('ascii', 'ignore')
 
     @property
     def username(self):
@@ -81,7 +109,7 @@ class User(DatabaseObject):
     @username.setter
     def username(self, in_username):
         assert isinstance(in_username, basestring)
-        self.username = in_username[:80].strip()
+        self.username = in_username[:80].strip().encode('ascii', 'ignore')
 
     @property
     def password(self):

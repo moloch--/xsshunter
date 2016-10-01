@@ -63,12 +63,25 @@ class DatastoreMixin(object):
             assert callable(getattr(self, datastore))
             return getattr(self, datastore)(filepath)
 
+    def delete_data(self, filepath, datastore="filesystem"):
+        datastore = "_%s_delete" % datastore
+        if datastore in self.CARRIERS and hasattr(self, datastore):
+            assert callable(getattr(self, datastore))
+            return getattr(self, datastore)(filepath)
+
     def _filesystem_save(self, filepath, data):
+        """
+        It is the caller's responsibity to prevent collisions, this is pretty
+        easy though because we support paths, "foo/bar.png" but we do flatten
+        these out so that we're not creating a bunch of random directories.
+        """
         save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         filename = "_".join(filepath.split(os.sep))
         save_file = os.path.join(save_dir, filename)
+        if os.path.exists(save_file):
+            raise ValueError("File already exists")
         with gzip.open(save_file, mode="wb") as fp:
             fp.write(data)
 
@@ -82,8 +95,20 @@ class DatastoreMixin(object):
         else:
             raise ValueError("File not found")
 
+    def _filesystem_delete(self, filepath):
+        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        filename = "_".join(filepath.split(os.sep))
+        save_file = os.path.join(save_dir, filename)
+        if os.path.exists(save_file) and os.path.isfile(save_file):
+            os.unlink(save_file)
+        else:
+            raise ValueError("File not found")
+
     def _s3_save(self, filename, data):
         pass
 
     def _s3_read(self, filename, data):
+        pass
+
+    def _s3_delete(self, filename, data):
         pass
