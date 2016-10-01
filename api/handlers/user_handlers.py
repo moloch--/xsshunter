@@ -30,6 +30,7 @@ class HomepageHandler(BaseHandler):
         # Render a personalized probe.js
         js = Probe.js(probe_id, user.domain, user.pgp_key,
                       user.chainload_uri, user.page_collection_paths_list)
+        self.set_header("Content-Type", "application/javascript")
         self.write(js)
 
 

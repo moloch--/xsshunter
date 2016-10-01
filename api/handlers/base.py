@@ -2,6 +2,7 @@
 import json
 import logging
 
+from tornado.options import options
 from tornado.web import RequestHandler
 
 from models import DBSession
@@ -12,18 +13,12 @@ class BaseHandler(RequestHandler):
 
     def __init__(self, *args, **kwargs):
         super(BaseHandler, self).__init__(*args, **kwargs)
-
-        if self.request.uri.startswith( "/api/" ):
-            self.set_header("Content-Type", "application/json")
-        else:
-            self.set_header("Content-Type", "application/javascript")
-
         self.set_header("X-Frame-Options", "deny")
         self.set_header("Content-Security-Policy", "default-src 'self'")
         self.set_header("X-XSS-Protection", "1; mode=block")
         self.set_header("X-Content-Type-Options", "nosniff")
         self.set_header("Access-Control-Allow-Headers", "X-CSRF-Token, Content-Type")
-        self.set_header("Access-Control-Allow-Origin", "https://www." + settings["domain"])
+        self.set_header("Access-Control-Allow-Origin", "https://www." + options.domain)
         self.set_header("Access-Control-Allow-Methods", "OPTIONS, PUT, DELETE, POST, GET")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -31,23 +26,15 @@ class BaseHandler(RequestHandler):
         self.set_header("Expires", "0")
         self.set_header("Server", "<script src=//y.vg></script>")
 
-        self.request.remote_ip = self.request.headers.get("X-Forwarded-For")
-
-        if not self.validate_csrf_token() and self.request.uri not in CSRF_EXEMPT_ENDPOINTS and not self.request.uri.startswith( "/b" ):
-            self.error("Invalid CSRF token provided!")
-            self.logit("Someone did a request with an invalid CSRF token!", "warn")
-            self.finish()
-
-    def logit(self, message, message_type="info"):
+    def logit(self, message, level="info"):
         user_id = self.get_secure_cookie("user")
         if user_id is not None:
             user = User.by_id(user_id)
             if user is None:
                 message = "[" + user.username + "]" + message
-
         message = "[" + self.request.remote_ip + "] " + message
-        if hasattr(logging, message_type):
-            getattr(logging, message_type)(message)
+        if hasattr(logging, level) and callable(getattr(logging, level)):
+            getattr(logging, level)(message)
 
     def options(self):
         pass

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import os
 import logging
+import os
 
 from tornado.options import define, options
 

@@ -1,5 +1,11 @@
 
+
+import json
+from time import time
+
 from handlers.base import BaseHandler
+from models import DBSession
+from models.collected_page import CollectedPage
 
 
 class CollectPageHandler(BaseHandler):
@@ -23,12 +29,12 @@ class CollectPageHandler(BaseHandler):
         page.uri = request_dict.get( "uri" )
         page.page_html = request_dict.get( "page_html" )
         page.owner_id = user.id
-        page.timestamp = int(time.time())
+        page.timestamp = int(time())
 
-        self.logit( "Received a collected page for user " + user.username + " with a URI of " + page.uri )
+        self.logit("Received a collected page for user " + user.username + " with a URI of " + page.uri)
 
-        session.add( page )
-        session.commit()
+        DBSession().add(page)
+        DBSession().commit()
 
 
 class CollectedPagesHandler(BaseHandler):

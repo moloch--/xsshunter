@@ -11,8 +11,8 @@ from urlparse import urlparse
 
 import bcrypt
 from sqlalchemy import Column
-from sqlalchemy.types import Boolean, String, Text
 from sqlalchemy.orm import backref, relationship
+from sqlalchemy.types import Boolean, String, Text
 
 from models import DBSession
 from models.base import DatabaseObject
