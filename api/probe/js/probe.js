@@ -1,7 +1,7 @@
 var pgp_key = [PGP_REPLACE_ME];
 var pgp_email_template = [TEMPLATE_REPLACE_ME];
 var chainload_uri = [CHAINLOAD_REPLACE_ME];
-var collect_page_list = [COLLECT_PAGE_LIST_REPLACE_ME]
+var collect_page_list = [COLLECT_PAGE_LIST_REPLACE_ME];
 
 function generate_pgp_encrypted_email( callback ) {
     var email_data = pgp_email_template;

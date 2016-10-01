@@ -13,13 +13,15 @@ class SendEmailMixin(object):
 
     """ Handles sending email """
 
-    CARRIERS = ["_mailgun"]
+    CARRIERS = ["mailgun"]
 
     def send_email(self, mail_to, subject, body, carrier="mailgun"):
+        assert carrier in self.CARRIERS
         carrier = "_%s" % carrier
-        if carrier in self.CARRIERS and hasattr(self, carrier):
-            assert callable(getattr(self, carrier))
+        if hasattr(self, carrier) and callable(getattr(self, carrier)):
             getattr(self, carrier)(mail_to, subject, body)
+        else:
+            raise ValueError("Carrier does not support %s" % carrier)
 
     @property
     def _mailgun_api(self):
@@ -52,22 +54,31 @@ class DatastoreMixin(object):
     DATASTORES = ["s3", "filesystem"]
 
     def save_data(self, filepath, data, datastore="filesystem"):
+        assert datastore in self.DATASTORES
         datastore = "_%s_save" % datastore
         if datastore in self.CARRIERS and hasattr(self, datastore):
             assert callable(getattr(self, datastore))
             getattr(self, datastore)(filepath, data)
+        else:
+            raise ValueError("Datastore does not support %s" % (datastore))
 
     def read_data(self, filepath, datastore="filesystem"):
+        assert datastore in self.DATASTORES
         datastore = "_%s_read" % datastore
         if datastore in self.CARRIERS and hasattr(self, datastore):
             assert callable(getattr(self, datastore))
             return getattr(self, datastore)(filepath)
+        else:
+            raise ValueError("Datastore does not support %s" % (datastore))
 
     def delete_data(self, filepath, datastore="filesystem"):
+        assert datastore in self.DATASTORES
         datastore = "_%s_delete" % datastore
         if datastore in self.CARRIERS and hasattr(self, datastore):
             assert callable(getattr(self, datastore))
             return getattr(self, datastore)(filepath)
+        else:
+            raise ValueError("Datastore does not support %s" % (datastore))
 
     def _filesystem_save(self, filepath, data):
         """

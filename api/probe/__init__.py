@@ -6,19 +6,21 @@ import os
 import json
 
 from cStringIO import StringIO
+from collections import OrderedDict
 
 
 class Probe(object):
 
     # The order here is important!
-    JS_FILES = [
-        "header.js",
-        "html2canvas.js",
-        "openpgp.js",
-        "probe.js"
-    ]
+    RENDER_VARS = "--- RENDER_VARIABLES ---"
+    JS_FILES = OrderedDict([
+        ("header.js", ""),
+        ("html2canvas.js", ""),
+        ("openpgp.js", ""),
+        (RENDER_VARS, None),
+        ("probe.js", "")
+    ])
     PGP_TEMPLATE = "pgp_encrypted_template.txt"
-    _js_cache = None
     _pgp_cache = None
 
     @classmethod
@@ -32,12 +34,9 @@ class Probe(object):
     def load_js(cls, no_cache=False):
         """ Concats all of the .js files together in the specified order """
         if cls._js_cache is None or no_cache:
-            probe = StringIO()
             for filename in cls.JS_FILES:
                 with open(cls.path_for(filename), "rb") as fp:
-                    probe.write(fp.read())
-            cls._js_cache = probe.getvalue()
-        return cls._js_cache
+                    cls.JS_FILES[filename] = fp.read()
 
     @classmethod
     def load_pgp(cls, no_cache=False):
@@ -47,19 +46,26 @@ class Probe(object):
         return cls._pgp_cache
 
     @classmethod
-    def js(cls, _id, domain, pgp_key, chainload, collections, no_cache=False):
+    def js(cls, no_cache=False, **kwargs):
         """
-        Constructs a personalized payload, this is an extremely ineffiecent
-        method but whatever we got plenty of memory (hopefully). Maybe we'll
-        come back and optimize it later.
+        Constructs a personalized payload
+
+        var pgp_key = [PGP_REPLACE_ME];
+        var pgp_email_template = [TEMPLATE_REPLACE_ME];
+        var chainload_uri = [CHAINLOAD_REPLACE_ME];
+        var collect_page_list = [COLLECT_PAGE_LIST_REPLACE_ME];
         """
-        js = cls.load_js(no_cache)
-        js = js.replace('[HOST_URL]', "https://" + domain) \
-            .replace('[PGP_REPLACE_ME]', json.dumps(pgp_key)) \
-            .replace('[CHAINLOAD_REPLACE_ME]', json.dumps(chainload)) \
-            .replace('[COLLECT_PAGE_LIST_REPLACE_ME]', json.dumps(collections))
-        if len(pgp_key):
-            js = js.replace('[TEMPLATE_REPLACE_ME]', cls.load_pgp(no_cache))
-        else:
-            js = js.replace('[TEMPLATE_REPLACE_ME]', "''")
-        return js.replace("[PROBE_ID]", _id)
+        cls.load_js(no_cache)
+        probe = StringIO()
+        for filename in cls.JS_FILES:
+            if filename == cls.RENDER_VARS:
+                probe.write("\n")
+                for var, value in kwargs:
+                    probe.write("var %s = %s;\n" % (var, value))
+                if len(kwargs.get("pgp_key", "")):
+                    probe.write("var pgp_email_template = %s;\n" % (
+                        cls.load_pgp(no_cache)
+                    ))
+            else:
+                probe.write(cls.JS_FILES[filename])
+        return probe.getvalue()
