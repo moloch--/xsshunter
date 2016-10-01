@@ -37,6 +37,12 @@ define("mailgun_sending_domain",
        help="the domain associated with the mailgun account")
 
 
+# Datastore settings
+define("mailgun_sending_domain",
+       group="datastore",
+       default=os.environ.get('XSSHUNTER_DATASTORE_FILESYSTEM_DIR', "uploads"),
+       help="directory that the filesystem datastore should write to")
+
 # Database settings
 define("sql_dialect",
        group="database",
@@ -92,11 +98,7 @@ def start_api():
     start_api_server()
 
 
-def main():
-    start_api()
-
-
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     options.parse_command_line()
-    main()
+    start_api()

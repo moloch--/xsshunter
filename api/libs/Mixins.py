@@ -1,4 +1,6 @@
 
+import os
+import gzip
 import urllib
 import json
 
@@ -8,6 +10,8 @@ from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 
 class SendEmailMixin(object):
+
+    """ Handles sending email """
 
     CARRIERS = ["_mailgun"]
 
@@ -39,3 +43,47 @@ class SendEmailMixin(object):
                               request_timeout=3.0)
         response = yield http_client.fetch(request)
         raise Return(json.loads(response.body)['response'])
+
+
+class DatastoreMixin(object):
+
+    """ Handles persistently storing data """
+
+    DATASTORES = ["s3", "filesystem"]
+
+    def save_data(self, filepath, data, datastore="filesystem"):
+        datastore = "_%s_save" % datastore
+        if datastore in self.CARRIERS and hasattr(self, datastore):
+            assert callable(getattr(self, datastore))
+            getattr(self, datastore)(filepath, data)
+
+    def read_data(self, filepath, datastore="filesystem"):
+        datastore = "_%s_read" % datastore
+        if datastore in self.CARRIERS and hasattr(self, datastore):
+            assert callable(getattr(self, datastore))
+            return getattr(self, datastore)(filepath)
+
+    def _filesystem_save(self, filepath, data):
+        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        filename = "_".join(filepath.split(os.sep))
+        save_file = os.path.join(save_dir, filename)
+        with gzip.open(save_file, mode="wb") as fp:
+            fp.write(data)
+
+    def _filesystem_read(self, filepath):
+        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        filename = "_".join(filepath.split(os.sep))
+        save_file = os.path.join(save_dir, filename)
+        if os.path.exists(save_file) and os.path.isfile(save_file):
+            with gzip.open(save_file, mode="rb") as fp:
+                return fp.read()
+        else:
+            raise ValueError("File not found")
+
+    def _s3_save(self, filename, data):
+        pass
+
+    def _s3_read(self, filename, data):
+        pass
