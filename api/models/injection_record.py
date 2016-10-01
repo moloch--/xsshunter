@@ -4,16 +4,17 @@
 Copyright 2015
 """
 
-from sqlalchemy import Column
+from sqlalchemy import Column, ForeignKey, and_
 from sqlalchemy.types import BigInteger, String, Text
 
+from libs.DatabaseDatatypes import UUIDType
 from models import DBSession
 from models.base import DatabaseObject
 
 
 class Injection(DatabaseObject):
 
-    owner_id = Column()
+    owner_id = Column(UUIDType(), ForeignKey('user._id'), nullable=False)
 
     content_type = Column(String(100))  # JavaScript/Image
     vulnerable_page = Column(String(3000))
@@ -37,10 +38,10 @@ class Injection(DatabaseObject):
 
     @classmethod
     def by_owner_and_id(cls, owner, injection_id):
-        return DBSession.query(cls).filter(
+        return DBSession.query(cls).filter(and_(
             cls.owner_id == owner.id,
             cls.id == injection_id
-        ).first()
+        )).first()
 
     def get_injection_blob(self):
         return {
@@ -53,7 +54,7 @@ class Injection(DatabaseObject):
             "dom": self.dom,
             "origin": self.origin,
             "screenshot": self.screenshot,
-            "injection_timestamp": str(self.created),
+            "created": str(self.created),
             "correlated_request": self.correlated_request,
             "browser_time": self.browser_time
         }

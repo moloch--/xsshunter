@@ -4,24 +4,25 @@
 Copyright 2015
 """
 
-from sqlalchemy import Column
-from sqlalchemy.types import String, Text
+from sqlalchemy import Column, ForeignKey
+from sqlalchemy.types import Text
 
+from libs.DatabaseDatatypes import UUIDType
 from models.base import DatabaseObject
 
 
 class CollectedPage(DatabaseObject):
 
+    owner_id = Column(UUIDType(), ForeignKey('user._id'), nullable=False)
     uri = Column(Text())
     page_html = Column(Text())
-    owner_id = Column(String(100))
 
     def to_dict(self):
         return {
             "uri": self.uri,
             "id": self.id,
             "page_html": self.page_html,
-            "timestamp": str(self.created)
+            "created": str(self.created)
         }
 
     def __str__(self):

@@ -12,6 +12,7 @@ from urlparse import urlparse
 import bcrypt
 from sqlalchemy import Column
 from sqlalchemy.types import Boolean, String, Text
+from sqlalchemy.orm import backref, relationship
 
 from models import DBSession
 from models.base import DatabaseObject
@@ -31,7 +32,15 @@ class User(DatabaseObject):
     password_reset_token = Column(String(120))
     email_enabled = Column(Boolean, default=False)
     _chainload_uri = Column(Text())
-    owner_correlation_key = Column(String(100), default=lambda: urandom(50).encode('hex'))
+    owner_correlation_key = Column(String(64), default=lambda: urandom(32).encode('hex'))
+
+    injections = relationship("InjectionRecord",
+                              backref=backref("user", lazy="select"),
+                              cascade="all,delete,delete-orphan")
+
+    collected_pages = relationship("CollectedPage",
+                                   backref=backref("user", lazy="select"),
+                                   cascade="all,delete,delete-orphan")
 
     # Done this way to allow users to just paste and share relative page lists
     _page_collection_paths_list = Column(Text())
@@ -108,6 +117,7 @@ class User(DatabaseObject):
 
     @domain.setter
     def domain(self, set_domain):
+        # Convert to lower case and remove whitespace
         set_domain = ''.join(set_domain.lower().split())
 
         # Short-cut if domain is the same
