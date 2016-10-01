@@ -5,6 +5,7 @@ Combines the .js files for us
 import os
 import json
 
+from base64 import b64encode
 from cStringIO import StringIO
 from collections import OrderedDict
 
@@ -48,12 +49,9 @@ class Probe(object):
     @classmethod
     def js(cls, no_cache=False, **kwargs):
         """
-        Constructs a personalized payload
-
-        var pgp_key = [PGP_REPLACE_ME];
-        var pgp_email_template = [TEMPLATE_REPLACE_ME];
-        var chainload_uri = [CHAINLOAD_REPLACE_ME];
-        var collect_page_list = [COLLECT_PAGE_LIST_REPLACE_ME];
+        Constructs a personalized payload, kwargs will be written into the file
+        as JavaScript strings. Currently strings are the only supported JS
+        data type.
         """
         cls.load_js(no_cache)
         probe = StringIO()
@@ -61,10 +59,12 @@ class Probe(object):
             if filename == cls.RENDER_VARS:
                 probe.write("\n")
                 for var, value in kwargs:
-                    probe.write("var %s = %s;\n" % (var, value))
+                    probe.write('var %s = atob("%s");\n' % (
+                        var, b64encode(value)
+                    ))
                 if len(kwargs.get("pgp_key", "")):
-                    probe.write("var pgp_email_template = %s;\n" % (
-                        cls.load_pgp(no_cache)
+                    probe.write('var pgp_email_template = atob("%s");\n' % (
+                        b64encode(cls.load_pgp(no_cache))
                     ))
             else:
                 probe.write(cls.JS_FILES[filename])
