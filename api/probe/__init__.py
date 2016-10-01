@@ -57,7 +57,7 @@ class Probe(object):
         probe = StringIO()
         for filename in cls.JS_FILES:
             if filename == cls.RENDER_VARS:
-                probe.write("\n")
+                probe.write("\n// --- Start Render Variables ---\n")
                 for var, value in kwargs:
                     probe.write('var %s = atob("%s");\n' % (
                         var, b64encode(value)
@@ -66,6 +66,7 @@ class Probe(object):
                     probe.write('var pgp_email_template = atob("%s");\n' % (
                         b64encode(cls.load_pgp(no_cache))
                     ))
+                probe.write("\n// --- End Render Variables ---\n")
             else:
                 probe.write(cls.JS_FILES[filename])
         return probe.getvalue()
