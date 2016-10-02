@@ -171,7 +171,7 @@ def main():
                 'environment': [
                     "XSSHUNTER_LISTEN_PORT=8888",
                 ],
-                'expose': ['"8888"'],
+                'expose': ['8888'],
                 'volumes': [
                     "./api/uploads:/opt/xsshunter/uploads"
                 ],
@@ -179,11 +179,10 @@ def main():
             },
             'web': {
                 'build': './gui',
-                'environment': [],
                 'volumes': [
                     "./gui/ssl:/etc/ngix/ssl"
                 ],
-                'ports': ['"80"', '"443"'],
+                'ports': ['80', '443'],
                 'depends_on': ['api']
             }
         },
@@ -230,11 +229,13 @@ def main():
 
     print_footer()
     if yes_no_prompt("Should I fire up the whole stack for you now"):
-        os.system("docker-compose up -f %s" % DOCKERCOMPOSEFILE)
-    else:
-        print ""
-        print INFO + "Okay no worries, you can start it yourself with:\n"
-        print "docker-compose up\n"
+        try:
+            os.system("docker-compose up")
+        except KeyboardInterrupt:
+            pass
+    print "\n\n"
+    print INFO + "In the future you can start everything with:\n"
+    print "\t'docker-compose up' or 'docker-compose up -d' for detached mode\n"
 
 
 if __name__ == "__main__":
