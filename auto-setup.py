@@ -267,6 +267,7 @@ def docker_version():
 
 
 def linux_docker_install():
+    """ Downloads Docker's own setup script and executes it """
     response = urllib2.urlopen(DOCKER_FOR_LINUX)
     script = NamedTemporaryFile(delete=False)
     script.write(response.read())
@@ -276,6 +277,7 @@ def linux_docker_install():
 
 
 def osx_docker_install():
+    """ Download the Docker for OSX .dmg and opens it """
     print INFO + "Downloading Docker for OSX, please wait ..."
     response = urllib2.urlopen()
     dmg = NamedTemporaryFile(delete=False)
@@ -284,7 +286,7 @@ def osx_docker_install():
     installer_path = os.path.join(os.getcwd(), "docker.dmg")
     os.rename(dmg.name, installer_path)
     print INFO + "Docker for OSX downloaded to: %s" % installer_path
-    child = Popen("open %s" % installer_path, shell=True).wait()
+    child = Popen("open -W %s" % installer_path, shell=True).wait()
     if child.retruncode != 0:
         print WARN + "Docker install did not exist cleanly"
 
@@ -296,12 +298,16 @@ def docker_setup():
             linux_docker_install()
         elif platform.system().lower() in ['darwin']:
             osx_docker_install()
-        else:
-            print WARN + "Unsupported platform, switch to Linux or OSX"
+    else:
+        print WARN + """Skipping Docker installation, but this is probably
+   going to break a lot of stuff, don't say I didn't warn you."""
 
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    if platform.system().lower() not in ['linux', 'darwin']:
+        print "[!] Fatal error; unsupported platform switch to Linux or OSX"
+        os._exit(3)
     try:
         print_header()
         if docker_version() is None:
