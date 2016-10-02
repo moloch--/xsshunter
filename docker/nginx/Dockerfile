@@ -48,8 +48,7 @@ WORKDIR /tmp
 RUN wget https://deb.nodesource.com/setup_4.x
 RUN chmod +x ./setup_4.x && ./setup_4.x && rm -f ./setup_4.x
 RUN apt-get install -y nodejs
-RUN npm install --loglevel verbose -g angular-cli@1.0.0-beta.15 && \
-	npm install --loglevel verbose -g typings
+RUN npm install --unsafe-perm -g angular-cli@1.0.0-beta.15
 
 
 #

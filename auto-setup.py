@@ -33,6 +33,7 @@ except ImportError:
 
 
 DOCKER = "docker"
+DOCKER_HELP_URL = "https://docs.docker.com/engine/installation/linux/ubuntulinux/#create-a-docker-group"
 DOCKER_INSTALL_CURL = 'curl -sSL https://get.docker.com/ | sh'
 DOCKER_INSTALL_WGET = 'wget -qO- https://get.docker.com/ | sh'
 DOCKER_FOR_LINUX = 'https://get.docker.com/'
@@ -80,7 +81,7 @@ def nginx_conf(compose, is_prod):
         with open("./gui/nginx/xsshunter", "wb") as fp:
             fp.write(conf.replace("fakedomin.com", hostname))
     else:
-        print WARN + "Invalid hostname, skipping (length 0)"
+        print WARN + "Invalid hostname (length 0), skipping Nginx setup"
 
 
 def email_conf(compose, is_prod):
@@ -209,15 +210,14 @@ def main():
     # Docker base images
     is_prod = yes_no_prompt("Is this a production setup (`no` for dev setup)")
     if is_prod:
-        print INFO + "%sProduction deployment%s (no debug features)" % (
+        print INFO + "%sProduction build%s (no debug features)" % (
             BOLD, W
         )
     else:
-        print WARN + "%sDevelopement deployment%s, debug features enabled!" % (
+        print WARN + "%sDevelopement build%s, debug features are enabled!" % (
             BOLD, W
         )
         compose["services"]["api"]["environment"].append("XSSHUNTER_DEBUG=1")
-    print ""
 
     # Docker base images
     if yes_no_prompt("Should I build the docker base images for you"):
@@ -260,7 +260,7 @@ def main():
 
 def docker_version():
     try:
-        stdout = Popen(['docker', '--version'], stdout=PIPE).stdout.read()
+        stdout = Popen([DOCKER, '--version'], stdout=PIPE).stdout.read()
         return stdout.strip()
     except OSError:
         return None
@@ -272,8 +272,12 @@ def linux_docker_install():
     script = NamedTemporaryFile(delete=False)
     script.write(response.read())
     script.close()
-    os.chmod(script.name, "600")
-    os.system(script.name)
+    os.chmod(script.name, "644")
+    child = Popen("sh %s" % script.name, shell=True)
+    child.wait()
+    if child.retruncode != 0:
+        print WARN + "Docker installation did not exit cleanly"
+    os.unlink(script.name)
 
 
 def osx_docker_install():
@@ -286,7 +290,8 @@ def osx_docker_install():
     installer_path = os.path.join(os.getcwd(), "docker.dmg")
     os.rename(dmg.name, installer_path)
     print INFO + "Docker for OSX downloaded to: %s" % installer_path
-    child = Popen("open -W %s" % installer_path, shell=True).wait()
+    child = Popen("open -W %s" % installer_path, shell=True)
+    child.wait()
     if child.retruncode != 0:
         print WARN + "Docker install did not exist cleanly"
 
@@ -300,7 +305,17 @@ def docker_setup():
             osx_docker_install()
     else:
         print WARN + """Skipping Docker installation, but this is probably
-   going to break a lot of stuff, don't say I didn't warn you."""
+    going to break a lot of stuff, don't say I didn't warn you."""
+
+
+def user_has_docker_permissions():
+    """ Checks to see if the current user has permission to talk to docker """
+    try:
+        child = Popen([DOCKER, "ps"], stdout=PIPE, stderr=PIPE)
+        child.wait()
+        return True if child.returncode == 0 else False
+    except OSError:
+        return False
 
 
 if __name__ == "__main__":
@@ -313,8 +328,19 @@ if __name__ == "__main__":
         if docker_version() is None:
             docker_setup()
         if docker_version() is not None:
-            print INFO + "Docker is installed (%s)" % docker_version()
             print INFO + "PyYAML is installed (PyYAML v%s)" % yaml.__version__
+            print INFO + "Docker is installed (%s)" % docker_version()
+            if user_has_docker_permissions():
+                print INFO + "The current user can execute docker commands!"
+            else:
+                print WARN + """The current user cannot execute docker commands
+
+    You'll probably have to add the current user to a group that has permission
+    to execute docker commands or execute this script as root.
+
+    For more help see: %s
+""" % DOCKER_HELP_URL
+                os._exit(4)
             main()
     except KeyboardInterrupt:
         print "\n\n" + WARN + "User exit"
