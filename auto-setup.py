@@ -4,8 +4,11 @@ A basic script to generate docker-compose configuration files,
 this is the easiest way to get the whole stack running on one machine.
 """
 
-import yaml
 import os
+import urllib2
+import platform
+from tempfile import NamedTemporaryFile
+from subprocess import Popen, PIPE
 
 
 W = "\033[0m"  # default/white
@@ -22,7 +25,18 @@ INFO = "%s%s[*]%s " % (BOLD, C, W)
 PROMPT = "%s%s[?]%s " % (BOLD, P, W)
 WARN = "%s%s[!]%s " % (BOLD, R, W)
 
+try:
+    import yaml
+except ImportError:
+    print WARN + "Please install PyYAML; 'pip install PyYAML'"
+    os._exit(1)
+
+
 DOCKER = "docker"
+DOCKER_INSTALL_CURL = 'curl -sSL https://get.docker.com/ | sh'
+DOCKER_INSTALL_WGET = 'wget -qO- https://get.docker.com/ | sh'
+DOCKER_FOR_LINUX = 'https://get.docker.com/'
+DOCKER_FOR_OSX = 'https://download.docker.com/mac/stable/Docker.dmg'
 DOCKERCOMPOSEFILE = "docker-compose.yml"
 
 
@@ -191,7 +205,6 @@ def main():
             }
         },
     }
-    print_header()
 
     # Docker base images
     is_prod = yes_no_prompt("Is this a production setup (`no` for dev setup)")
@@ -231,7 +244,7 @@ def main():
         with open(DOCKERCOMPOSEFILE, "w") as fp:
             fp.write(yaml_config)
 
-    if yes_no_prompt("Should I build all of the docker images for you now"):
+    if yes_no_prompt("Should I build the main docker images for you now"):
             os.system("docker-compose build")
 
     print_footer()
@@ -245,9 +258,57 @@ def main():
     print "\t'docker-compose up' or 'docker-compose up -d' for detached mode\n"
 
 
+def docker_version():
+    try:
+        stdout = Popen(['docker', '--version'], stdout=PIPE).stdout.read()
+        return stdout.strip()
+    except OSError:
+        return None
+
+
+def linux_docker_install():
+    response = urllib2.urlopen(DOCKER_FOR_LINUX)
+    script = NamedTemporaryFile(delete=False)
+    script.write(response.read())
+    script.close()
+    os.chmod(script.name, "600")
+    os.system(script.name)
+
+
+def osx_docker_install():
+    print INFO + "Downloading Docker for OSX, please wait ..."
+    response = urllib2.urlopen()
+    dmg = NamedTemporaryFile(delete=False)
+    dmg.write(response.read())
+    dmg.close()
+    installer_path = os.path.join(os.getcwd(), "docker.dmg")
+    os.rename(dmg.name, installer_path)
+    print INFO + "Docker for OSX downloaded to: %s" % installer_path
+    child = Popen("open %s" % installer_path, shell=True).wait()
+    if child.retruncode != 0:
+        print WARN + "Docker install did not exist cleanly"
+
+
+def docker_setup():
+    print WARN + "Docker is not installed or is not on the system path"
+    if yes_no_prompt("Would you like me to install docker?"):
+        if platform.system().lower() in ['linux']:
+            linux_docker_install()
+        elif platform.system().lower() in ['darwin']:
+            osx_docker_install()
+        else:
+            print WARN + "Unsupported platform, switch to Linux or OSX"
+
+
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     try:
-        main()
+        print_header()
+        if docker_version() is None:
+            docker_setup()
+        if docker_version() is not None:
+            print INFO + "Docker is installed (%s)" % docker_version()
+            print INFO + "PyYAML is installed (PyYAML v%s)" % yaml.__version__
+            main()
     except KeyboardInterrupt:
         print "\n\n" + WARN + "User exit"
