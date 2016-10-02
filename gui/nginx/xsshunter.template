@@ -1,0 +1,98 @@
+
+# Redirect HTTP to www
+server {
+
+    listen 80;
+    server_name fakedomain.com;
+
+    location / {
+        rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
+    }
+}
+
+# Redirect payloads to HTTPS
+server {
+
+    listen 80;
+    server_name *.fakedomain.com;
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+    return 307 https://$host$request_uri;
+    client_max_body_size 500M; # In case we have an extra large payload capture
+
+}
+
+# Redirect HTTPS to www
+server {
+
+    listen 443;
+    server_name fakedomain.com;
+
+    ssl on;
+    ssl_certificate /etc/nginx/ssl/my.crt; # Wildcard SSL certificate
+    ssl_certificate_key /etc/nginx/ssl/my.key; # Wildcard SSL certificate key
+
+    location / {
+        rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
+    }
+
+}
+
+# API proxy
+server {
+
+    listen 443;
+    server_name *.fakedomain.com;
+
+    ssl on;
+    ssl_certificate /etc/nginx/ssl/my.crt; # Wildcard SSL certificate
+    ssl_certificate_key /etc/nginx/ssl/my.key; # Wildcard SSL certificate key
+
+    client_max_body_size 500M;
+    location / {
+        proxy_pass  http://localhost:8888;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+}
+
+# Redirect api to HTTPS
+server {
+
+    listen 80;
+    server_name api.fakedomain.com; # Subdomain for API server
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+    return 307 https://api.fakedomain.com$request_uri;
+    client_max_body_size 500M; # In case we have an extra large payload capture
+
+}
+
+# Redirect www to HTTPS
+server {
+
+   listen 80;
+   server_name www.fakedomain.com;
+
+   location / {
+       rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
+   }
+
+}
+
+# GUI proxy
+server {
+
+   listen 443;
+   server_name www.fakedomain.com;
+
+   client_max_body_size 500M;
+   ssl on;
+   ssl_certificate /etc/nginx/ssl/my.crt; # Wildcard SSL certificate
+   ssl_certificate_key /etc/nginx/ssl/my.key; # Wildcard SSL certificate key
+   location / {
+       proxy_pass  http://localhost:1234;
+       proxy_set_header Host $host;
+   }
+
+}

@@ -15,5 +15,5 @@ ADD . /opt/xsshunter
 #
 # > Entrypoint & Volumes
 #
-VOLUME ["/opt/xsshunter/logs"]
+VOLUME ["/opt/xsshunter/uploads"]
 ENTRYPOINT ["/opt/xsshunter/apiserver.py"]

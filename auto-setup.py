@@ -51,11 +51,18 @@ def build_docker_base():
 def nginx_conf(compose, is_prod):
     print "What is the base domain name you will be using? "
     print "(ex. localhost, www.example.com)"
-    hostname = raw_input(PROMPT + "Root domain? ")
-    if hostname != "":
+    hostname = raw_input(PROMPT + "Root domain? ").strip()
+    if len(hostname):
         compose["services"]["api"]["environment"].append(
             "XSSHUNTER_DOMAIN=%s" % hostname
         )
+        with open("./gui/nginx/xsshunter.template", "rb") as fp:
+            conf = fp.read()
+        print INFO + "Saving new config to: ./gui/nginx/xsshunter"
+        with open("./gui/nginx/xsshunter", "wb") as fp:
+            fp.write(conf.replace("fakedomin.com", hostname))
+    else:
+        print WARN + "Invalid hostname, skipping (length 0)"
 
 
 def email_conf(compose, is_prod):
@@ -164,15 +171,19 @@ def main():
                 'environment': [
                     "XSSHUNTER_LISTEN_PORT=8888",
                 ],
-                'expose': ["8888"],
-                'volumes': [],
+                'expose': ['"8888"'],
+                'volumes': [
+                    "./api/uploads:/opt/xsshunter/uploads"
+                ],
                 'depends_on': ['sql']
             },
             'web': {
                 'build': './gui',
                 'environment': [],
-                'volumes': [],
-                'ports': ["80", "443"],
+                'volumes': [
+                    "./gui/ssl:/etc/ngix/ssl"
+                ],
+                'ports': ['"80"', '"443"'],
                 'depends_on': ['api']
             }
         },

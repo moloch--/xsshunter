@@ -31,6 +31,11 @@ define("email_from",
        default=os.environ.get('XSSHUNTER_EMAIL_FROM', "xsshunter@example.com"),
        help="email from header")
 
+define("mailgun_api_key",
+       group="email",
+       default=os.environ.get('XSSHUNTER_MAILGUN_API_KEY', "example.com"),
+       help="the domain associated with the mailgun account")
+
 define("mailgun_sending_domain",
        group="email",
        default=os.environ.get('XSSHUNTER_MAILGUN_SENDING_DOMAIN', "example.com"),

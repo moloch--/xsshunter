@@ -22,8 +22,6 @@ services:
       - XSSHUNTER_LISTEN_PORT=8888
       - XSSHUNTER_DEBUG=1
       - XSSHUNTER_COOKIE_SECRET=badsecret
-    volumes:
-      - ./api/logs:/opt/xsshunter/api/logs:rw
     expose:
       - "8888"
     depends_on:
