@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import yaml
-import sys
 import os
 
 
@@ -17,99 +16,10 @@ GR = "\033[37m"  # gray
 BOLD = "\033[1m"
 INFO = "%s%s[*]%s " % (BOLD, C, W)
 PROMPT = "%s%s[?]%s " % (BOLD, P, W)
-ERROR = "%s%s[!]%s " % (BOLD, R, W)
+WARN = "%s%s[!]%s " % (BOLD, R, W)
 
 DOCKER = "docker"
 DOCKERCOMPOSEFILE = "docker-compose.yml"
-
-NGINX_TEMPALTE = """
-server {
-    # Redirect HTTP to www
-    listen 80;
-    server_name fakedomain.com;
-    location / {
-        rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
-    }
-}
-
-server {
-    # Redirect payloads to HTTPS
-    listen 80;
-    server_name *.fakedomain.com;
-    proxy_set_header X-Forwarded-For $remote_addr;
-
-    return 307 https://$host$request_uri;
-    client_max_body_size 500M; # In case we have an extra large payload capture
-}
-
-server {
-    # Redirect HTTPS to www
-    listen 443;
-    ssl on;
-    ssl_certificate /etc/nginx/ssl/fakedomain.com.crt; # Wildcard SSL certificate
-    ssl_certificate_key /etc/nginx/ssl/fakedomain.com.key; # Wildcard SSL certificate key
-
-    server_name fakedomain.com;
-    location / {
-        rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
-    }
-}
-
-server {
-    # API proxy
-    listen 443;
-    ssl on;
-    ssl_certificate /etc/nginx/ssl/fakedomain.com.crt; # Wildcard SSL certificate
-    ssl_certificate_key /etc/nginx/ssl/fakedomain.com.key; # Wildcard SSL certificate key
-
-    server_name *.fakedomain.com;
-    access_log /var/log/nginx/fakedomain.com.vhost.access.log;
-    error_log /var/log/nginx/fakedomain.com.vhost.error.log;
-
-    client_max_body_size 500M;
-
-    location / {
-        proxy_pass  http://localhost:8888;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-    }
-}
-
-server {
-    # Redirect api to HTTPS
-    listen 80;
-    server_name api.fakedomain.com; # Subdomain for API server
-    proxy_set_header X-Forwarded-For $remote_addr;
-
-    return 307 https://api.fakedomain.com$request_uri;
-    client_max_body_size 500M; # In case we have an extra large payload capture
-}
-
-server {
-   # Redirect www to HTTPS
-   listen 80;
-   server_name www.fakedomain.com;
-   location / {
-       rewrite ^/(.*)$ https://www.fakedomain.com/$1 permanent;
-   }
-}
-
-server {
-   # GUI proxy
-   listen 443;
-   server_name www.fakedomain.com;
-   client_max_body_size 500M;
-   ssl on;
-   ssl_certificate /etc/nginx/ssl/fakedomain.com.crt; # Wildcard SSL certificate
-   ssl_certificate_key /etc/nginx/ssl/fakedomain.com.key; # Wildcard SSL certificate key
-
-
-   location / {
-       proxy_pass  http://localhost:1234;
-       proxy_set_header Host $host;
-   }
-}
-"""
 
 
 def print_header():
@@ -126,6 +36,10 @@ def print_header():
 """
 
 
+def yes_no_prompt(msg):
+    return raw_input(PROMPT + msg + " [Y/n]? ").lower().strip() in ["y", "yes"]
+
+
 def build_docker_base():
     """ Automatically builds the Docker base images with dependancies """
     print INFO + "Building base Python image, please wait..."
@@ -134,114 +48,147 @@ def build_docker_base():
     os.system(DOCKER + " build ./docker/nginx -t xsshunter_nginx")
 
 
-def nginx_conf(settings):
+def nginx_conf(compose, is_prod):
     print "What is the base domain name you will be using? "
     print "(ex. localhost, www.example.com)"
-    hostname = raw_input(PROMPT + "Domain? ")
+    hostname = raw_input(PROMPT + "Root domain? ")
     if hostname != "":
-        settings["domain"] = hostname
-    return NGINX_TEMPALTE.replace("fakedomain.com", settings["domain"])
+        compose["domain"] = hostname
+    return
 
 
-def email_conf(settings):
+def email_conf(compose, is_prod):
+    environ = compose["services"]["api"]["environment"]
     print "Great! Now let's setup your Mailgun account to send XSS alerts to."
     print "We'll need yo API key (ex. key-8da843ff65205a61374b09b81ed0fa35)"
-    settings["mailgun_api_key"] = raw_input(PROMPT + "API key: ")
+    environ["mailgun_api_key"] = raw_input(PROMPT + "API key: ")
     print ""
 
     print "What is your Mailgun domain? (ex. example.com)"
-    settings["mailgun_sending_domain"] = raw_input(PROMPT + "Mailgun domain: ")
+    environ["mailgun_sending_domain"] = raw_input(PROMPT + "Mailgun domain: ")
     print ""
 
     print "What email address is sending the payload fire emails?: "
     print "(ex. no-reply@example.com)"
-    settings["email_from"] = raw_input(PROMPT + "Sending email address: ")
+    environ["email_from"] = raw_input(PROMPT + "Sending email address: ")
     print ""
 
-    print "[?] Where should abuse/contact emails go?: "
+    print "Where should abuse/contact emails go?: "
     print "(ex. yourpersonal@gmail.com)"
-    settings["abuse_email"] = raw_input(PROMPT + "Abuse/Contact email: ")
+    environ["abuse_email"] = raw_input(PROMPT + "Abuse/Contact email: ")
     print ""
 
 
-def database_conf(settings):
-    print "[?] What postgres user is this service using? "
+def database_conf(compose, is_prod):
+    print "What postgres user is this service using? "
     print "(ex. xsshunter)"
-    settings["postgreql_username"] = raw_input(PROMPT + "Postgres username: ")
+    compose["postgreql_username"] = raw_input(PROMPT + "Postgres username: ")
     print ""
 
     print "What is the postgres user's password? (ex. @!$%@^%UOFGJOEJG$)"
-    settings["postgreql_password"] = raw_input(PROMPT + "Postgres password: ")
+    compose["postgreql_password"] = raw_input(PROMPT + "Postgres password: ")
     print ""
 
     print "What is the postgres user's DB? (ex. xsshunter)"
-    settings["postgres_db"] = raw_input(PROMPT + "Postgres DB: ")
+    compose["postgres_db"] = raw_input(PROMPT + "Postgres DB: ")
     print ""
 
 
-def secrets_conf(settings):
+def secrets_conf(compose, is_prod):
     print INFO + " Generating cookie secret..."
-    settings["cookie_secret"] = os.urandom(32).encode('hex')
+    compose["cookie_secret"] = os.urandom(32).encode('hex')
 
 
 def print_footer(hostname):
     print """
-Setup complete! Please now copy the 'default' file to /etc/nginx/sites-enabled/default
-This can be done by running the following:
-sudo cp default /etc/nginx/sites-enabled/default
+    Also, please ensure your wildcard SSL certificate and key are available at
+    the following locations:
 
-Also, please ensure your wildcard SSL certificate and key are available at the following locations:
-/etc/nginx/ssl/""" + hostname + """.crt; # Wildcard SSL certificate
-/etc/nginx/ssl/""" + hostname + """.key; # Wildcard SSL key
+    ./gui/ssl/my.crt # Wildcard SSL certificate
+    ./gui/ssl/my.key # Wildcard SSL key
 
-Good luck hunting for XSS!
-							-xsshunter team
+        Good hunting,
+           -xsshunter team
 """
 
 
 def main():
-    settings = {
-        "email_from": "",
-        "mailgun_api_key": "",
-        "mailgun_sending_domain": "",
-        "domain": "",
-        "abuse_email": "",
-        "cookie_secret": "",
+    """ Walks the user thru the entire setup of XSS Hunter """
+    compose = {
+        'version': '2',
+        'services': {
+            'sql': {
+                'image': 'postgres:latest',
+                'environment': []
+            },
+            'api': {
+                'build': './api',
+                'environment': [
+                    "XSSHUNTER_LISTEN_PORT=8888",
+                ],
+                'volumes': [],
+                'depends_on': ['sql']
+            },
+            'web': {
+                'build': './gui',
+                'environment': [],
+                'volumes': [],
+                'ports': ["80", "443"],
+                'depends_on': ['api']
+            }
+        },
     }
     print_header()
 
     # Docker base images
-    msg = PROMPT + "Should I build the docker base images [y/n]? "
-    if raw_input(msg).lower() == "y":
+    is_prod = yes_no_prompt("Is this a production setup (`no` for dev setup)")
+    if is_prod:
+        print INFO + "%sProduction deployment%s (no debug features)" % (
+            BOLD, W
+        )
+    else:
+        print WARN + "%sDevelopement deployment%s, debug features enabled!" % (
+            BOLD, W
+        )
+    print ""
+
+    # Docker base images
+    if yes_no_prompt("Should I build the docker base images for you"):
         build_docker_base()
 
     # Email setup
-    msg = PROMPT + "Should I setup email support [y/n]? "
-    if raw_input(msg).lower() == "y":
-        email_conf(settings)
+    if yes_no_prompt("Should I setup email support"):
+        email_conf(compose)
 
     # Database setup
-    msg = PROMPT + "Should I setup the databse [y/n]? "
-    if raw_input(msg).lower() == "y":
-        database_conf(settings)
+    if yes_no_prompt("Should I setup the database now"):
+        database_conf(compose)
 
-    yaml_config = yaml.dump(settings, default_flow_style=False)
-    file_handler = open(DOCKERCOMPOSEFILE, "w")
-    file_handler.write(yaml_config)
-    file_handler.close()
+    if yes_no_prompt("Should I configure Nginx for you"):
+        print INFO + "Minting new nginx configuration file ..."
+        file_handler = open("default", "w")
+        conf = nginx_conf()
+        file_handler.write(conf)
+        file_handler.close()
 
-    print "[*] Minting new nginx configuration file..."
-    file_handler = open("default", "w")
-    conf = nginx_conf(settings)
-    file_handler.write(conf)
-    file_handler.close()
+    if yes_no_prompt("Should I save all of the current settings"):
+        yaml_config = yaml.dump(compose, default_flow_style=False)
+        file_handler = open(DOCKERCOMPOSEFILE, "w")
+        file_handler.write(yaml_config)
+        file_handler.close()
 
-    print_footer(settings["hostname"])
-    msg = PROMPT + "Should I start the whole stack [y/n]? "
-    if raw_input(msg).lower() == "y":
+    print_footer()
+    if yes_no_prompt("Should I fire up the whole stack for you now"):
         os.system("docker-compose up -f %s" % DOCKERCOMPOSEFILE)
+    else:
+        print ""
+        print INFO + "Okay no worries, you can start it yourself with: "
+        print "docker-compose up -f %s" % DOCKERCOMPOSEFILE
 
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print "\n\n" + WARN + "User exit"

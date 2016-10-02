@@ -23,7 +23,7 @@ services:
       - XSSHUNTER_DEBUG=1
       - XSSHUNTER_COOKIE_SECRET=badsecret
     volumes:
-      - ./logs:/opt/xsshunter/logs:rw
+      - ./api/logs:/opt/xsshunter/api/logs:rw
     expose:
       - "8888"
     depends_on:
@@ -31,6 +31,8 @@ services:
 
   web:
     build: ./gui/
+    volumes:
+      - ./gui/ssl:/var/ngix/ssl
     ports:
       - "80:80"
       - "443:443"

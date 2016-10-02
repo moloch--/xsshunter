@@ -1,7 +1,11 @@
+docker-compose.yml
+
 api/uploads/*
 api/logs/*
-gui/guienv/*
+
+gui/ssl/*.crt
+gui/ssl/*.key
+
 *.pyc
 .DS_Store
-api/uploads/*
 env

@@ -43,6 +43,7 @@ define("mailgun_sending_domain",
        default=os.environ.get('XSSHUNTER_DATASTORE_FILESYSTEM_DIR', "uploads"),
        help="directory that the filesystem datastore should write to")
 
+
 # Database settings
 define("sql_dialect",
        group="database",
@@ -51,7 +52,7 @@ define("sql_dialect",
 
 define("sql_database",
        group="database",
-       default=os.environ.get("XSSHUNTER_SQL_DATABASE", "app"),
+       default=os.environ.get("XSSHUNTER_SQL_DATABASE", "xsshunter"),
        help="the sql database name")
 
 define("sql_host",
@@ -66,7 +67,7 @@ define("sql_port",
 
 define("sql_user",
        group="database",
-       default=os.environ.get("XSSHUNTER_SQL_USER", "app"),
+       default=os.environ.get("XSSHUNTER_SQL_USER", "xsshunter"),
        help="database username")
 
 define("sql_password",
