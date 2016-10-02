@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+A basic script to generate docker-compose configuration files,
+this is the easiest way to get the whole stack running on one machine.
+"""
 
 import yaml
 import os
@@ -226,6 +230,9 @@ def main():
     if yes_no_prompt("Should I save all of the current settings"):
         with open(DOCKERCOMPOSEFILE, "w") as fp:
             fp.write(yaml_config)
+
+    if yes_no_prompt("Should I build all of the docker images for you now"):
+            os.system("docker-compose build")
 
     print_footer()
     if yes_no_prompt("Should I fire up the whole stack for you now"):

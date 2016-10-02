@@ -18,7 +18,7 @@ ADD . /var/www
 # > Nginx Configs
 #
 WORKDIR /var/www
-RUN mkdir /etc/nginx/ssl
+
 RUN mv ./nginx/xsshunter /etc/nginx/sites-available/xsshunter
 RUN mv ./nginx/nginx.conf /etc/nginx/conf/nginx.conf && rm -rf ./nginx
 RUN ln -s /etc/nginx/sites-available/xsshunter /etc/nginx/sites-enabled/xsshunter
