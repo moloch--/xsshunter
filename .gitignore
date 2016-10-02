@@ -3,6 +3,7 @@ docker-compose.yml
 api/uploads/*
 api/logs/*
 
+gui/nginx/xsshunter
 gui/ssl/*.crt
 gui/ssl/*.key
 
