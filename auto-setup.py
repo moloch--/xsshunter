@@ -34,8 +34,6 @@ except ImportError:
 
 DOCKER = "docker"
 DOCKER_HELP_URL = "https://docs.docker.com/engine/installation/linux/ubuntulinux/#create-a-docker-group"
-DOCKER_INSTALL_CURL = 'curl -sSL https://get.docker.com/ | sh'
-DOCKER_INSTALL_WGET = 'wget -qO- https://get.docker.com/ | sh'
 DOCKER_FOR_LINUX = 'https://get.docker.com/'
 DOCKER_FOR_OSX = 'https://download.docker.com/mac/stable/Docker.dmg'
 DOCKERCOMPOSEFILE = "docker-compose.yml"
@@ -61,10 +59,24 @@ def yes_no_prompt(msg):
 
 def build_docker_base():
     """ Automatically builds the Docker base images with dependancies """
+    # Build Python base image
     print INFO + "Building base Python image, please wait..."
-    os.system(DOCKER + " build ./docker/python -t xsshunter_python")
+    py_base = Popen(DOCKER + " build ./docker/python -t xsshunter_python",
+                    shell=True)
+    py_base.wait()
+    if py_base.returncode != 0:
+        print WARN + "Python base image build did not exit cleanly"
+        if yes_no_prompt("Would you like to try again?"):
+            build_docker_base()
+    # Build Nginx base image
     print INFO + "Building base Nginx image, please wait..."
-    os.system(DOCKER + " build ./docker/nginx -t xsshunter_nginx")
+    nginx_base = Popen(DOCKER + " build ./docker/nginx -t xsshunter_nginx",
+                       shell=True)
+    nginx_base.wait()
+    if nginx_base.returncode != 0:
+        print WARN + "Nginx base image build did not exit cleanly"
+        if yes_no_prompt("Would you like to try again?"):
+            build_docker_base()
 
 
 def nginx_conf(compose, is_prod):
@@ -245,7 +257,12 @@ def main():
             fp.write(yaml_config)
 
     if yes_no_prompt("Should I build the main docker images for you now"):
-            os.system("docker-compose build")
+        docker_compose = Popen("docker-compose build", shell=True)
+        docker_compose.wait()
+        if docker_compose.returncode != 0:
+            print WARN + "Docker compose build failed, not sure why ..."
+        else:
+            print INFO + "Built all docker images successfully!"
 
     print_footer()
     if yes_no_prompt("Should I fire up the whole stack for you now"):
@@ -259,6 +276,7 @@ def main():
 
 
 def docker_version():
+    """ Checks the docker version, returns None if docker isn't installed """
     try:
         stdout = Popen([DOCKER, '--version'], stdout=PIPE).stdout.read()
         return stdout.strip()
@@ -319,6 +337,9 @@ def user_has_docker_permissions():
 
 
 if __name__ == "__main__":
+    #
+    # We just check for the dependancies here and then execute main()
+    #
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     if platform.system().lower() not in ['linux', 'darwin']:
         print "[!] Fatal error; unsupported platform switch to Linux or OSX"
