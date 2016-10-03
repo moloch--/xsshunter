@@ -56,6 +56,7 @@ API_HANDLERS = [
 
 ]
 
+
 def start_api_server():
     """ Main entry point for the application """
     api_app = Application(

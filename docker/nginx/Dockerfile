@@ -14,7 +14,7 @@ ENV NGINX_VER 1.11.4
 # > Install/Compile Nginx + PageSpeed/Spdy
 #
 RUN apt-get update --fix-missing \
-	&& apt-get install -y build-essential zlib1g-dev libpcre3 libpcre3-dev openssl libssl-dev libperl-dev wget ca-certificates logrotate libgeoip-dev git
+	&& apt-get install --fix-missing -y build-essential zlib1g-dev libpcre3 libpcre3-dev openssl libssl-dev libperl-dev wget ca-certificates logrotate libgeoip-dev git
 
 RUN (wget -O - https://github.com/pagespeed/ngx_pagespeed/archive/v${PAGESPEED_VER}-beta.tar.gz | tar zxf - -C /tmp) \
 	&& (wget -O - https://dl.google.com/dl/page-speed/psol/${PAGESPEED_VER}.tar.gz | tar zxf - -C /tmp/ngx_pagespeed-${PAGESPEED_VER}-beta/) \
@@ -44,8 +44,8 @@ RUN (wget -O - https://github.com/pagespeed/ngx_pagespeed/archive/v${PAGESPEED_V
 # > Install NodeJS v4 and NPM v3
 #
 WORKDIR /tmp
-RUN wget https://deb.nodesource.com/setup_4.x &&
- 	&& chmod +x ./setup_4.x \
+RUN wget https://deb.nodesource.com/setup_4.x
+RUN chmod +x ./setup_4.x \
 	&& ./setup_4.x \
 	&& rm -f ./setup_4.x
 RUN apt-get install -y nodejs
