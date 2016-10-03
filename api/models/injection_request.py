@@ -16,7 +16,7 @@ class InjectionRequest(DatabaseObject):
     injection_key = Column(String(100))
     owner_correlation_key = Column(String(100))
 
-    def get_injection_blob(self):
+    def to_dict(self):
         return {
             "request": self.request,
             "injection_key": self.injection_key

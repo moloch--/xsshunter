@@ -3,8 +3,14 @@ import json
 
 from handlers.base import BaseHandler
 
+from models.user import User
+from models.injection_record import InjectionRequest
 
-class InjectionRequestHandler( BaseHandler ):
+from libs.decorators import json_api
+
+
+class InjectionRequestHandler(BaseHandler):
+
     """
     This endpoint is for recording injection attempts.
 
@@ -16,29 +22,27 @@ class InjectionRequestHandler( BaseHandler ):
 
     Sending two correlation requests means that the previous injection_key entry will be replaced.
     """
-    def post( self ):
-        return_data = {}
-        request_dict = json.loads( self.request.body )
-        if not self.validate_input( ["request", "owner_correlation_key", "injection_key"], request_dict ):
-            return
+    @json_api({
+        "type": "object"
+    })
+    def post(self, req):
 
-        injection_key = request_dict.get( "injection_key" )
+
+        injection_key = req.get("injection_key", "")
 
         injection_request = InjectionRequest()
         injection_request.injection_key = injection_key
-        injection_request.request = request_dict.get( "request" )
-        owner_correlation_key = request_dict.get( "owner_correlation_key" )
-        injection_request.owner_correlation_key = owner_correlation_key
+        injection_request.request = req.get("request")
+        correlation_key = req.get("owner_correlation_key")
 
-        # Ensure that this is an existing correlation key
-        owner_user = session.query( User ).filter_by( owner_correlation_key=owner_correlation_key ).first()
-        if owner_user is None:
+        owner = User.by_owner_correlation_key(correlation_key)
+        if owner is None:
             return_data["success"] = False
             return_data["message"] = "Invalid owner correlation key provided!"
             self.write( json.dumps( return_data ) )
             return
 
-        self.logit( "User " + owner_user.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key )
+        self.logit("User " + owner.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key)
 
         # Replace any previous injections with the same key and owner
         session.query( InjectionRequest ).filter_by( injection_key=injection_key ).filter_by( owner_correlation_key=owner_correlation_key ).delete()
@@ -47,7 +51,7 @@ class InjectionRequestHandler( BaseHandler ):
         return_data["message"] = "Injection request successfully recorded!"
         session.add( injection_request )
         session.commit()
-        self.write( json.dumps( return_data ) )
+        self.write(return_data)
 
 
 class ResendInjectionEmailHandler(BaseHandler):

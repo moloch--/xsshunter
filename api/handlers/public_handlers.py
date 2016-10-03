@@ -128,6 +128,6 @@ class LogoutHandler(BaseHandler):
 
     def get(self):
         self.logit("User is logging out.")
-        self.clear_cookie("user")
+        self.clear_cookie("session")
         self.clear_cookie("csrf")
         self.redirect("/")

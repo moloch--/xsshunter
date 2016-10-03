@@ -43,7 +43,7 @@ class Injection(DatabaseObject):
             cls.id == injection_id
         )).first()
 
-    def get_injection_blob(self):
+    def to_dict(self):
         return {
             "id": self.id,
             "vulnerable_page": self.vulnerable_page,

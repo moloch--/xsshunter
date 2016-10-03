@@ -61,6 +61,7 @@ def start_api_server():
     api_app = Application(
         handlers=API_HANDLERS,
         cookie_secret=options.cookie_secret,
+        xsrf_cookies=True,
         debug=options.debug)
     app_server = HTTPServer(api_app, xheaders=options.x_headers)
     app_server.listen(options.listen_port)

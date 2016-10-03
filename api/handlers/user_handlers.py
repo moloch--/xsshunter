@@ -1,10 +1,10 @@
 
-import json
-
 from handlers.base import BaseHandler
 from models import DBSession
 from models.user import User
 from probe import Probe
+
+from libs.decorators import json_api, authenticated
 
 
 class HomepageHandler(BaseHandler):
@@ -28,49 +28,32 @@ class HomepageHandler(BaseHandler):
         if self.request.uri != "/":
             probe_id = self.request.uri.split("/")[1]
         # Render a personalized probe.js
-        js = Probe.js(probe_id, user.domain, user.pgp_key,
-                      user.chainload_uri, user.page_collection_paths_list)
+        js = Probe.js(probe_id,
+                      domain=user.domain,
+                      gpg_key=user.pgp_key,
+                      chainload=user.chainload_uri,
+                      page_collections=user.page_collection_paths_list)
         self.set_header("Content-Type", "application/javascript")
         self.write(js)
 
 
 class UserInformationHandler(BaseHandler):
 
+    @authenticated
     def get(self):
-        user = self.get_authenticated_user()
-        self.logit("User grabbed their profile information")
-        if user is None:
-            return
-        self.write(user.get_user_blob())
+        user = self.get_current_user()
+        self.write(user.to_dict())
 
+    @authenticated
+    @json_api({
+        "type": "object",
+        "properties": {
+            "gpg_key": {"type": "string"}
+        }
+    })
     def put(self):
-        user = self.get_authenticated_user()
-        if user is None:
-            return
+        user = self.get_current_user()
 
-        user_data = json.loads(self.request.body)
-
-        # Mass assignment is dangerous mmk
-        allowed_attributes = [
-            "pgp_key", "full_name", "email", "password",
-            "email_enabled", "chainload_uri", "page_collection_paths_list"
-        ]
-        invalid_attribute_list = []
-        for key, value in user_data.iteritems():
-            if key in allowed_attributes:
-                return_data = user.set_attribute(key, user_data.get(key))
-                if return_data is not True:
-                    invalid_attribute_list.append(key)
-
+        DBSession().add(user)
         DBSession().commit()
-
-        return_data = user.get_user_blob()
-
-        if invalid_attribute_list:
-            return_data["success"] = False
-            return_data["invalid_fields"] = invalid_attribute_list
-        else:
-            self.logit("User just updated their profile information.")
-            return_data["success"] = True
-
-        self.write(return_data)
+        self.write(user.to_dict())

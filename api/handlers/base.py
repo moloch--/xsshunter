@@ -47,12 +47,7 @@ class BaseHandler(RequestHandler):
     def throw_404(self):
         self.set_status(404)
         self.write("Resource not found")
-
-    def validate_csrf_token(self):
-        csrf_token = self.get_secure_cookie("csrf")
-        if self.request.headers.get('X-CSRF-Token') == csrf_token:
-            return True
-        return False
+        self.finish()
 
     def error(self, error_message):
         self.set_status(BAD_REQUEST)
@@ -61,8 +56,11 @@ class BaseHandler(RequestHandler):
             "error": error_message
         })
 
-    def get_authenticated_user(self):
-        """ Return the current user or None """
+    def get_current_user(self):
+        """
+        Return the current user or None, TODO: Check to see if the session is
+        expired or not.
+        """
         try:
             session = json.loads(self.get_secure_cookie("session"))
             return User.by_id(session.get("user", ""))

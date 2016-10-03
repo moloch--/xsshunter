@@ -62,6 +62,12 @@ class User(DatabaseObject):
         username = username[:80].strip().encode('ascii', 'ignore')
         return DBSession().query(cls).filter_by(_username=username).first()
 
+    @classmethod
+    def by_owner_correlation_key(cls, correlation_key):
+        return DBSession().query(cls).filter_by(
+            owner_correlation_key=correlation_key
+        ).first()
+
     @staticmethod
     def hash_password(password, salt=None):
         """
@@ -186,8 +192,10 @@ class User(DatabaseObject):
     def page_collection_paths_list(self, in_paths_list_text):
         self._page_collection_paths_list = in_paths_list_text.strip()
 
-    def get_user_blob(self):
+    def to_dict(self):
         return {
+            "created": str(self.created),
+            "updated": str(self.updated),
             "full_name": self.full_name,
             "email": self.email,
             "username": self.username,
@@ -195,8 +203,7 @@ class User(DatabaseObject):
             "domain": self.domain,
             "email_enabled": self.email_enabled,
             "chainload_uri": self.chainload_uri,
-            "owner_correlation_key": self.owner_correlation_key,
-            "page_collection_paths_list": self.page_collection_paths_list
+            "owner_correlation_key": self.owner_correlation_key
         }
 
     def __str__(self):
