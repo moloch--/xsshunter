@@ -1,36 +1,50 @@
 
 import json
+import os
+from datetime import datetime, timedelta
 
-from tornado import gen
+from tornado.options import options
 
 from handlers.base import BaseHandler
+from libs.decorators import json_api
+from libs.mixins import SendEmailMixin
 from models.user import User
+from modles import DBSession
 
 
 class LoginHandler(BaseHandler):
 
-    @gen.coroutine
-    def post(self):
-        req_data = json.loads(self.request.body)
-
-        user = User.by_username(req_data.get("username", ""))
-
+    @json_api({
+        "type": "object",
+        "properites": {
+            "username": {"type": "string"},
+            "password": {"type": "string"}
+        },
+        "required": ["username", "password"]
+    })
+    def post(self, req):
+        user = User.by_username(req.get("username", ""))
         if user is None:
+            User.hash_password(req.get("username", ""))
             self.error("Invalid username or password supplied")
-            self.logit("Someone failed to log in as " + user_data["username"], "warn")
+            self.logit("Someone failed to log in as  %r" % req["username"],
+                       "warn")
             return
-        elif user.compare_password(req_data.get("password", "")):
+        elif user.compare_password(req.get("password", "")):
             self.start_session(user)
-            self.logit("Someone logged in as " + user_data["username"])
+            self.logit("Someone logged in as " + req["username"])
             return
-        self.error("Invalid username or password supplied")
-        return
+        else:
+            self.error("Invalid username or password supplied")
 
     def start_session(self, user):
         csrf_token = os.urandom(50).encode('hex')
-        request_handler.set_secure_cookie("user", user.id, secure=True)
-        request_handler.set_secure_cookie("csrf", csrf_token, secure=True)
-        request_handler.write(json.dumps({
+        self.set_secure_cookie("session", json.dumps({
+            "user": user.id,
+            "expires": str(datetime.utcnow() + timedelta(days=1))
+        }), secure=True)
+        self.set_secure_cookie("csrf", csrf_token, secure=True)
+        self.write(json.dumps({
             "success": True,
             "csrf_token": csrf_token,
         }))
@@ -38,80 +52,76 @@ class LoginHandler(BaseHandler):
 
 class RegisterHandler(BaseHandler):
 
-    @gen.coroutine
-    def post(self):
-        user_data = json.loads(self.request.body)
-        user_data["email_enabled"] = True
+    MIN_PASSWORD_LENGTH = 1 if options.debug else 12
 
-        if User.by_username(user_data.get("username", "")):
-            already_exists = {
+    @json_api({
+        "type": "object",
+        "properites": {
+            "username": {"type": "string"},
+            "password": {"type": "string"},
+            "domain": {"type": "string"}
+        },
+        "required": ["username", "password", "domain"]
+    })
+    def post(self, req):
+        username = req.get("username", "")
+        if User.by_username(username):
+            self.write({
                 "success": False,
                 "invalid_fields": ["username (already registered!)"],
-            }
-            self.write(already_exists)
+            })
 
-        domain = user_data.get("domain", "")
-        if User.by_domain(domain) or domain in FORBIDDEN_SUBDOMAINS:
-            domain_exists = {
+        domain = req.get("domain", "")
+        if User.by_domain(domain):
+            self.write({
                 "success": False,
                 "invalid_fields": ["domain (already registered!)"],
-            }
-            self.write(domain_exists)
+            })
             return
 
-        new_user = User()
-
-        return_dict = {}
-        allowed_attributes = ["pgp_key", "full_name", "domain", "email",
-                              "password", "username", "email_enabled"]
-        invalid_attribute_list = []
-        for key, value in user_data.iteritems():
-            if key in allowed_attributes:
-                return_data = new_user.set_attribute(key, user_data.get(key))
-                if return_data is not True:
-                    invalid_attribute_list.append(key)
-
-        new_user.generate_user_id()
-
-        if invalid_attribute_list:
-            return_dict["success"] = False
-            return_dict["invalid_fields"] = invalid_attribute_list
-            return_dict = {
+        password = req.get("password", "")
+        if len(password) < self.MIN_PASSWORD_LENGTH:
+            self.write({
                 "success": False,
-                "invalid_fields": ["username (already registered!)"],
-            }
-            self.write(json.dumps(return_dict))
+                "invalid_fields": ["password too short"]
+            })
             return
 
-        self.logit("New user successfully registered with username of " + user_data["username"])
+        # add the new user to the database
+        new_user = User(username=username, domain=domain, password=password)
         DBSession().add(new_user)
         DBSession().commit()
-        self.write({})
+        self.logit("New user successfully registered with username of %r" % (
+            req["username"]
+        ))
+        self.write({"success": True})
 
 
-class ContactUsHandler(BaseHandler):
+class ContactUsHandler(BaseHandler, SendEmailMixin):
 
-    def post(self):
-        contact_data = json.loads(self.request.body)
-        if not self.validate_input(["name","email", "body"], contact_data):
-            return
-
-        self.logit("Someone just used the 'Contact Us' form. )
-
-        email_body = "Name: " + contact_data["name"] + "\n"
-        email_body += "Email: " + contact_data["email"] + "\n"
-        email_body += "Message: " + contact_data["body"] + "\n"
-        self.send_email( settings["abuse_email"], "XSSHunter Contact Form Submission", email_body, "", "text" )
-
-        self.write({
-            "success": True,
-        })
+    @json_api({
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "email": {"type": "email"},
+            "body": {"type": "string"}
+        },
+        "required": ["name", "email", "body"]
+    })
+    def post(self, req):
+        self.logit("Someone just used the 'Contact Us' form.")
+        subject = "XSSHunter Contact Form Submission"
+        email_body = "Name: " + req["name"] + "\n"
+        email_body += "Email: " + req["email"] + "\n"
+        email_body += "Message: " + req["body"] + "\n"
+        self.send_email(options.abuse_email, subject, email_body)
+        self.write({"success": True})
 
 
 class HealthHandler(BaseHandler):
 
     def get(self):
-        self.write("XSSHUNTER_OK")
+        self.write({"status": "ok"})
 
 
 class LogoutHandler(BaseHandler):
@@ -120,4 +130,4 @@ class LogoutHandler(BaseHandler):
         self.logit("User is logging out.")
         self.clear_cookie("user")
         self.clear_cookie("csrf")
-        self.write({})
+        self.redirect("/")

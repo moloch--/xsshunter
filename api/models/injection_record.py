@@ -7,7 +7,7 @@ Copyright 2015
 from sqlalchemy import Column, ForeignKey, and_
 from sqlalchemy.types import BigInteger, String, Text
 
-from libs.DatabaseDatatypes import UUIDType
+from libs.database_datatypes import UUIDType
 from models import DBSession
 from models.base import DatabaseObject
 

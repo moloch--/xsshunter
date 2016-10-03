@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch
+@author: moloch, mandatory
 Copyright 2015
 """
 
@@ -11,7 +11,7 @@ from tornado.options import options
 from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from libs.DatabaseConnection import DatabaseConnection
+from libs.database_connection import DatabaseConnection
 
 
 if options.db_debug:

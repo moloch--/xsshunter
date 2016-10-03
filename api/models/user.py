@@ -5,15 +5,15 @@ Copyright 2015
 """
 
 import re
+from datetime import datetime, timedelta
 from hashlib import sha256
 from os import urandom
 from urlparse import urlparse
-from datetime import datetime, timedelta
 
 import bcrypt
 from sqlalchemy import Column
 from sqlalchemy.orm import backref, relationship
-from sqlalchemy.types import Boolean, String, Text, DateTime
+from sqlalchemy.types import Boolean, DateTime, String, Text
 from sqlalchemy_utils import URLType
 
 from models import DBSession

@@ -1,5 +1,6 @@
 tornado
 furl
+json-schema
 sqlalchemy-utils
 SQLAlchemy
 backports-abc

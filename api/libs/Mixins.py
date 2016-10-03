@@ -1,12 +1,12 @@
 
-import os
 import gzip
-import urllib
 import json
+import os
+import urllib
 
-from tornado.options import options
-from tornado.gen import coroutine, Return
+from tornado.gen import Return, coroutine
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.options import options
 
 
 class SendEmailMixin(object):

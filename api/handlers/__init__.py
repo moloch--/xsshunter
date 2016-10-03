@@ -32,11 +32,11 @@ API_HANDLERS = [
     (r"/api/login", LoginHandler),
     (r"/api/logout", LogoutHandler),
     (r"/api/contactus", ContactUsHandler),
-    (r"/health", HealthHandler),
+    (r"/api/health", HealthHandler),
 
     # Collection handlers
     (r"/api/collected_pages", CollectedPagesHandler),
-    (r"/page_callback", CollectPageHandler),
+    (r"/api/page_callback", CollectPageHandler),
 
     # Injection handlers
     (r"/api/injection", InjectionHandler),
@@ -45,15 +45,14 @@ API_HANDLERS = [
 
     # XSS handlers
     (r"/api/payloadfires", XSSPayloadFiresHandler),
-    (r"/js_callback", CallbackHandler),
+    (r"/api/js_callback", CallbackHandler),
 
     # Static file handlers
-    (r"/uploads/(.*)", StaticFileHandler, {"path": "uploads/"}),
+    (r"/api/uploads/(.*)", StaticFileHandler, {"path": "uploads/"}),
 
     # User handlers
     (r"/api/user", UserInformationHandler),
-    (r"/(.*)", HomepageHandler),
-
+    (r"/api/(.*)", HomepageHandler),
 ]
 
 

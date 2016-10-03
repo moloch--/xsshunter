@@ -7,7 +7,7 @@ Copyright 2015
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.types import Text
 
-from libs.DatabaseDatatypes import UUIDType
+from libs.database_datatypes import UUIDType
 from models.base import DatabaseObject
 
 

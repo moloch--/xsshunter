@@ -1,7 +1,6 @@
 
 
 import json
-from time import time
 
 from handlers.base import BaseHandler
 from models import DBSession
@@ -17,23 +16,20 @@ class CollectPageHandler(BaseHandler):
 
     def post(self):
         user = self.get_user_from_subdomain()
-        request_dict = json.loads(self.request.body)
-        if not self.validate_input(["page_html", "uri"], request_dict):
-            return
+        req = json.loads(self.request.body)
 
         if user is None:
             self.throw_404()
             return
 
         page = CollectedPage()
-        page.uri = request_dict.get( "uri" )
-        page.page_html = request_dict.get( "page_html" )
-        page.owner_id = user.id
-        page.timestamp = int(time())
+        page.uri = req.get("uri", "")
+        page.page_html = req.get("page_html", "")
+        user.collected_pages.append(page)
 
         self.logit("Received a collected page for user " + user.username + " with a URI of " + page.uri)
-
         DBSession().add(page)
+        DBSession().add(user)
         DBSession().commit()
 
 

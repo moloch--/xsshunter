@@ -15,7 +15,7 @@ from sqlalchemy import Column, event
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.types import DateTime
 
-from libs.DatabaseDatatypes import UUIDType
+from libs.database_datatypes import UUIDType
 from models import DBSession
 
 
