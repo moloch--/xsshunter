@@ -9,14 +9,16 @@ MAINTAINER moloch
 #
 # > Update/Install Packages
 #
-RUN apt-get update -y && apt-get install -y build-essential
-RUN pip install --upgrade pip
+RUN apt-get update --fix-missing && apt-get install -y build-essential
 ADD ./requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt
+RUN pip install --upgrade pip \
+  && pip install -r /tmp/requirements.txt
 
 
 #
 # > Cleanup
 #
 RUN rm -f /tmp/requirements.txt
-RUN apt-get purge -y build-essential && apt-get autoremove -y && apt-get clean -y
+RUN apt-get purge -y build-essential \
+  && apt-get autoremove -y \
+  && apt-get clean -y

@@ -13,8 +13,7 @@ ENV NGINX_VER 1.11.4
 #
 # > Install/Compile Nginx + PageSpeed/Spdy
 #
-RUN apt-get update \
-	&& apt-get update --fix-missing \
+RUN apt-get update --fix-missing \
 	&& apt-get install -y build-essential zlib1g-dev libpcre3 libpcre3-dev openssl libssl-dev libperl-dev wget ca-certificates logrotate libgeoip-dev git
 
 RUN (wget -O - https://github.com/pagespeed/ngx_pagespeed/archive/v${PAGESPEED_VER}-beta.tar.gz | tar zxf - -C /tmp) \
@@ -42,14 +41,16 @@ RUN (wget -O - https://github.com/pagespeed/ngx_pagespeed/archive/v${PAGESPEED_V
 
 
 #
-# > Install Node
+# > Install NodeJS v4 and NPM v3
 #
 WORKDIR /tmp
-RUN wget https://deb.nodesource.com/setup_4.x
-RUN chmod +x ./setup_4.x && ./setup_4.x && rm -f ./setup_4.x
+RUN wget https://deb.nodesource.com/setup_4.x &&
+ 	&& chmod +x ./setup_4.x \
+	&& ./setup_4.x \
+	&& rm -f ./setup_4.x
 RUN apt-get install -y nodejs
-RUN npm install npm@latest -g
-RUN npm install -g angular-cli@1.0.0-beta.15
+RUN npm install -g npm@latest
+RUN npm install -g angular-cli@1.0.0-beta.16 && npm install -g is-my-json-valid
 
 
 #
@@ -74,8 +75,8 @@ RUN mkdir /etc/nginx/sites-enabled \
 #
 # > Redirect Logs to STDOUT/STDERR
 #
-RUN ln -sf /dev/stdout /var/log/nginx/access.log
-RUN ln -sf /dev/stderr /var/log/nginx/error.log
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
 
 #

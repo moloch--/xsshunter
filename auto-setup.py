@@ -7,6 +7,7 @@ this is the easiest way to get the whole stack running on one machine.
 import os
 import urllib2
 import platform
+
 from tempfile import NamedTemporaryFile
 from subprocess import Popen, PIPE
 
@@ -25,18 +26,11 @@ INFO = "%s%s[*]%s " % (BOLD, C, W)
 PROMPT = "%s%s[?]%s " % (BOLD, P, W)
 WARN = "%s%s[!]%s " % (BOLD, R, W)
 
-try:
-    import yaml
-except ImportError:
-    print WARN + "Please install PyYAML; 'pip install PyYAML'"
-    os._exit(1)
-
-
 DOCKER = "docker"
 DOCKER_HELP_URL = "https://docs.docker.com/engine/installation/linux/ubuntulinux/#create-a-docker-group"
 DOCKER_FOR_LINUX = 'https://get.docker.com/'
 DOCKER_FOR_OSX = 'https://download.docker.com/mac/stable/Docker.dmg'
-DOCKERCOMPOSEFILE = "docker-compose.yml"
+DOCKER_COMPOSE_FILENAME = "docker-compose.yml"
 
 
 def print_header():
@@ -53,8 +47,26 @@ def print_header():
 """
 
 
-def yes_no_prompt(msg):
-    return raw_input(PROMPT + msg + " [Y/n]? ").lower().strip() in ["y", "yes"]
+def yes_no_prompt(message):
+    """ Yes/No prompt returns True for 'y' or 'yes' """
+    return raw_input(PROMPT + message + "? [Y/n]: ").lower().strip() in [
+        "y", "yes"
+    ]
+
+
+try:
+    import yaml
+except ImportError:
+    if yes_no_prompt("PyYAML is not installed, should I install it"):
+        child = Popen("sudo pip install PyYAML", shell=True)
+        child.wait()
+        if child.returncode == 0:
+            print INFO + "Successfully installed PyYAML, re-run this script"
+        else:
+            print WARN + "PyYAML installation did not exit cleanly"
+    else:
+        print WARN + "Please install PyYAML; 'pip install PyYAML'"
+    os._exit(1)
 
 
 def build_docker_base():
@@ -163,12 +175,11 @@ def database_conf(compose, is_prod):
 
     if not is_prod:
         print WARN + "Exposing database port 5432 for debugging"
-        compose["services"]["sql"]["ports"] = ['"5432:5432"']
-    return db_username, db_password, db_name
+        compose["services"]["sql"]["ports"] = ['5432:5432']
 
 
 def secrets_conf(compose, is_prod):
-    print INFO + " Generating cookie secret..."
+    print INFO + " Generating fresh cookie secret..."
     secret = os.urandom(32).encode('hex')
     compose["services"]["api"]["environment"].append(
         "XSSHUNTER_COOKIE_SECRET=%s" % secret
@@ -251,9 +262,9 @@ def main():
     print "-" * 60
     for index, line in enumerate(yaml_config.split('\n')):
         print "%02d. %s" % (index + 1, line)
-    print "\n", "-" * 60
+    print "-" * 60
     if yes_no_prompt("Should I save all of the current settings"):
-        with open(DOCKERCOMPOSEFILE, "w") as fp:
+        with open(DOCKER_COMPOSE_FILENAME, "w") as fp:
             fp.write(yaml_config)
 
     if yes_no_prompt("Should I build the main docker images for you now"):
@@ -278,8 +289,7 @@ def main():
 def docker_version():
     """ Checks the docker version, returns None if docker isn't installed """
     try:
-        stdout = Popen([DOCKER, '--version'], stdout=PIPE).stdout.read()
-        return stdout.strip()
+        return Popen([DOCKER, '--version'], stdout=PIPE).stdout.read().strip()
     except OSError:
         return None
 
@@ -291,7 +301,7 @@ def linux_docker_install():
     script.write(response.read())
     script.close()
     os.chmod(script.name, "644")
-    child = Popen("sh %s" % script.name, shell=True)
+    child = Popen("sudo sh %s" % script.name, shell=True)
     child.wait()
     if child.retruncode != 0:
         print WARN + "Docker installation did not exit cleanly"
@@ -301,22 +311,23 @@ def linux_docker_install():
 def osx_docker_install():
     """ Download the Docker for OSX .dmg and opens it """
     print INFO + "Downloading Docker for OSX, please wait ..."
-    response = urllib2.urlopen()
+    response = urllib2.urlopen(DOCKER_FOR_OSX)
     dmg = NamedTemporaryFile(delete=False)
     dmg.write(response.read())
     dmg.close()
-    installer_path = os.path.join(os.getcwd(), "docker.dmg")
+    installer_path = os.path.join(os.getcwd(), "docker-for-osx.dmg")
     os.rename(dmg.name, installer_path)
     print INFO + "Docker for OSX downloaded to: %s" % installer_path
     child = Popen("open -W %s" % installer_path, shell=True)
     child.wait()
     if child.retruncode != 0:
         print WARN + "Docker install did not exist cleanly"
+    os.unlink(installer_path)
 
 
 def docker_setup():
     print WARN + "Docker is not installed or is not on the system path"
-    if yes_no_prompt("Would you like me to install docker?"):
+    if yes_no_prompt("Would you like me to install docker"):
         if platform.system().lower() in ['linux']:
             linux_docker_install()
         elif platform.system().lower() in ['darwin']:

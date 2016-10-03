@@ -38,7 +38,8 @@ define("mailgun_api_key",
 
 define("mailgun_sending_domain",
        group="email",
-       default=os.environ.get('XSSHUNTER_MAILGUN_SENDING_DOMAIN', "example.com"),
+       default=os.environ.get('XSSHUNTER_MAILGUN_SENDING_DOMAIN',
+                              "example.com"),
        help="the domain associated with the mailgun account")
 
 
@@ -90,7 +91,8 @@ define("sql_pool_recycle",
 # Cookie settings
 define("cookie_secret",
        group="secret",
-       default=os.environ.get("XSSHUNTER_COOKIE_SECRET", os.urandom(32).encode('hex')),
+       default=os.environ.get("XSSHUNTER_COOKIE_SECRET",
+                              os.urandom(32).encode('hex')),
        help="the cookie hmac secret",
        type=str)
 
