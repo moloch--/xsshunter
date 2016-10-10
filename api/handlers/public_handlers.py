@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 
 from tornado.options import options
 
+from furl import furl
 from handlers.base import BaseHandler
 from libs.decorators import json_api
 from libs.mixins import SendEmailMixin
 from models.user import User
-from modles import DBSession
 
 
 class LoginHandler(BaseHandler):
@@ -52,8 +52,6 @@ class LoginHandler(BaseHandler):
 
 class RegisterHandler(BaseHandler):
 
-    MIN_PASSWORD_LENGTH = 1 if options.debug else 12
-
     @json_api({
         "type": "object",
         "properites": {
@@ -80,7 +78,7 @@ class RegisterHandler(BaseHandler):
             return
 
         password = req.get("password", "")
-        if len(password) < self.MIN_PASSWORD_LENGTH:
+        if len(password) < User.MIN_PASSWORD_LENGTH:
             self.write({
                 "success": False,
                 "invalid_fields": ["password too short"]
@@ -89,12 +87,70 @@ class RegisterHandler(BaseHandler):
 
         # add the new user to the database
         new_user = User(username=username, domain=domain, password=password)
-        DBSession().add(new_user)
-        DBSession().commit()
+        self.db_session.add(new_user)
+        self.db_session.commit()
         self.logit("New user successfully registered with username of %r" % (
             req["username"]
         ))
         self.write({"success": True})
+
+
+class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
+
+    @json_api({
+        "type": "object",
+        "properties": {
+            "username": {"type": "string"}
+        },
+        "required": ["username"]
+    })
+    def post(self, req):
+        """
+        There is a slight timing attack here, you could potentially detect if
+        the system sent an email or not, but it's not really a big deal since
+        our sign-up form also leaks usernames by design. We pass the token via
+        a URI fragment to avoid it getting logged by the webserver.
+        """
+        user = User.by_username(req.get("username", ""))
+        if user is not None:
+            token = user.generate_password_reset_token()
+            self.db_session.add(user)
+            self.db_session.commit()
+            reset_url = furl()
+            reset_url.scheme = "https"
+            reset_url.hostname = options.domain
+            reset_url.path = "/password-reset"
+            reset_url.fragment = token
+            body = self.render_password_reset_email(user, str(reset_url))
+            self.send_email(user.email, "Password Reset", body)
+            del token  # Snake oil
+        self.write({"success": True})
+
+    def render_password_reset_email(self, user, url):
+        pass  # TODO: Create a template
+
+
+class PasswordResetHandler(BaseHandler):
+
+    @json_api({
+        "type": "object",
+        "properties": {
+            "username": {"type": "string"},
+            "password_reset_token": {"type": "string"},
+            "new_password": {"type": "string"}
+        },
+        "required": ["username", "password_reset_token", "new_password"]
+    })
+    def post(self, req):
+        user = User.by_username(req.get("username", ""))
+        if user is not None:
+            token = req.get("password_reset_token", "")
+            if user.validate_password_reset_token(token):
+                user.password = req.get("new_password", "")
+                DBSession().add(user)
+                DBSession().commit()
+                self.write({"success": True})
+        self.write({"success": False})
 
 
 class ContactUsHandler(BaseHandler, SendEmailMixin):

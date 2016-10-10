@@ -19,8 +19,8 @@ class CollectedPage(DatabaseObject):
 
     def to_dict(self):
         return {
-            "uri": self.uri,
             "id": self.id,
+            "uri": self.uri,
             "page_html": self.page_html,
             "created": str(self.created)
         }

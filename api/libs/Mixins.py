@@ -4,6 +4,7 @@ import json
 import os
 import urllib
 
+from hashlib import sha256
 from tornado.gen import Return, coroutine
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.options import options
@@ -47,9 +48,14 @@ class SendEmailMixin(object):
         raise Return(json.loads(response.body)['response'])
 
 
-class DatastoreMixin(object):
+class PersistentDataMixin(object):
 
-    """ Handles persistently storing data """
+    """
+    Handles persistently storing data, it's a basic key/value storage bucket.
+
+    Filesystem: Files are stored GZip'd in the SHA256 of the `filepath`
+                this datastore also requires a writable filesystem (duh)
+    """
 
     DATASTORES = ["s3", "filesystem"]
 
@@ -82,14 +88,13 @@ class DatastoreMixin(object):
 
     def _filesystem_save(self, filepath, data):
         """
-        It is the caller's responsibity to prevent collisions, this is pretty
-        easy though because we support paths, "foo/bar.png" but we do flatten
-        these out so that we're not creating a bunch of random directories.
+        It is the caller's responsibility to track filenames/access/etc, we're
+        just a blind key<->value data store.
         """
         save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-        filename = "_".join(filepath.split(os.sep))
+        filename = sha256(filepath).hexdigest()
         save_file = os.path.join(save_dir, filename)
         if os.path.exists(save_file):
             raise ValueError("File already exists")
@@ -98,7 +103,7 @@ class DatastoreMixin(object):
 
     def _filesystem_read(self, filepath):
         save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
-        filename = "_".join(filepath.split(os.sep))
+        filename = sha256(filepath).hexdigest()
         save_file = os.path.join(save_dir, filename)
         if os.path.exists(save_file) and os.path.isfile(save_file):
             with gzip.open(save_file, mode="rb") as fp:
@@ -108,7 +113,7 @@ class DatastoreMixin(object):
 
     def _filesystem_delete(self, filepath):
         save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
-        filename = "_".join(filepath.split(os.sep))
+        filename = sha256(filepath).hexdigest()
         save_file = os.path.join(save_dir, filename)
         if os.path.exists(save_file) and os.path.isfile(save_file):
             os.unlink(save_file)

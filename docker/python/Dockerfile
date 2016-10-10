@@ -7,6 +7,18 @@ MAINTAINER moloch
 
 
 #
+# > Fix Apt's broke ass
+# https://github.com/docker-library/buildpack-deps/issues/40
+#
+RUN echo \
+   'deb ftp://ftp.us.debian.org/debian/ jessie main\n \
+    deb ftp://ftp.us.debian.org/debian/ jessie-updates main\n \
+    deb http://security.debian.org jessie/updates main\n' \
+    > /etc/apt/sources.list
+
+
+
+#
 # > Update/Install Packages
 #
 RUN apt-get update --fix-missing && apt-get install -y build-essential

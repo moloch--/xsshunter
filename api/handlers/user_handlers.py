@@ -1,6 +1,7 @@
+"""
 
+"""
 from handlers.base import BaseHandler
-from models import DBSession
 from models.user import User
 from probe import Probe
 
@@ -54,6 +55,6 @@ class UserInformationHandler(BaseHandler):
     def put(self):
         user = self.get_current_user()
 
-        DBSession().add(user)
-        DBSession().commit()
+        self.db_session.add(user)
+        self.db_session.commit()
         self.write(user.to_dict())

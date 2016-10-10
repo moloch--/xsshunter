@@ -23,10 +23,12 @@ class InjectionRequestHandler(BaseHandler):
     Sending two correlation requests means that the previous injection_key entry will be replaced.
     """
     @json_api({
-        "type": "object"
+        "type": "object",
+        "properites": {
+
+        }
     })
     def post(self, req):
-
 
         injection_key = req.get("injection_key", "")
 
@@ -37,15 +39,16 @@ class InjectionRequestHandler(BaseHandler):
 
         owner = User.by_owner_correlation_key(correlation_key)
         if owner is None:
-            return_data["success"] = False
-            return_data["message"] = "Invalid owner correlation key provided!"
-            self.write( json.dumps( return_data ) )
+            self.write({
+                "success": False,
+                "message": "Invalid owner correlation key provided!"
+            })
             return
 
         self.logit("User " + owner.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key)
 
         # Replace any previous injections with the same key and owner
-        session.query( InjectionRequest ).filter_by( injection_key=injection_key ).filter_by( owner_correlation_key=owner_correlation_key ).delete()
+        session.query(InjectionRequest).filter_by(injection_key=injection_key).filter_by(owner_correlation_key=owner_correlation_key).delete()
 
         return_data["success"] = True
         return_data["message"] = "Injection request successfully recorded!"
@@ -75,6 +78,7 @@ class ResendInjectionEmailHandler(BaseHandler):
             "success": True,
             "message": "Email sent!",
         })
+
 
 class DeleteInjectionHandler(BaseHandler):
 

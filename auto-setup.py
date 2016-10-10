@@ -303,7 +303,7 @@ def linux_docker_install():
     os.chmod(script.name, "644")
     child = Popen("sudo sh %s" % script.name, shell=True)
     child.wait()
-    if child.retruncode != 0:
+    if child.returncode != 0:
         print WARN + "Docker installation did not exit cleanly"
     os.unlink(script.name)
 
@@ -320,7 +320,7 @@ def osx_docker_install():
     print INFO + "Docker for OSX downloaded to: %s" % installer_path
     child = Popen("open -W %s" % installer_path, shell=True)
     child.wait()
-    if child.retruncode != 0:
+    if child.returncode != 0:
         print WARN + "Docker install did not exist cleanly"
     os.unlink(installer_path)
 

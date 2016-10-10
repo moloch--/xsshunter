@@ -46,6 +46,7 @@ class Injection(DatabaseObject):
     def to_dict(self):
         return {
             "id": self.id,
+            "created": str(self.created),
             "vulnerable_page": self.vulnerable_page,
             "victim_ip": self.victim_ip,
             "referer": self.referer,
@@ -54,7 +55,6 @@ class Injection(DatabaseObject):
             "dom": self.dom,
             "origin": self.origin,
             "screenshot": self.screenshot,
-            "created": str(self.created),
             "correlated_request": self.correlated_request,
             "browser_time": self.browser_time
         }

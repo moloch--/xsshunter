@@ -8,13 +8,14 @@ import re
 from datetime import datetime, timedelta
 from hashlib import sha256
 from os import urandom
-from urlparse import urlparse
 
 import bcrypt
+from furl import furl
 from sqlalchemy import Column
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.types import Boolean, DateTime, String, Text
 from sqlalchemy_utils import URLType
+from tornado.options import options
 
 from models import DBSession
 from models.base import DatabaseObject
@@ -25,12 +26,13 @@ class User(DatabaseObject):
     EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
     DOMAIN_REGEX = r"^[a-z0-9]+$"
     LINUX_EPOCH = datetime(1970, 1, 1, 0, 0)
+    MIN_PASSWORD_LENGTH = 1 if options.debug else 12
 
     _full_name = Column(String(120))
     _username = Column(String(80))
     _password = Column(String(120))
     _email = Column(String(120))
-    _domain = Column(String(120))
+    _domain = Column(String(32), unqiue=True)
     _pgp_key = Column(Text())
     email_enabled = Column(Boolean, default=False)
     _chainload_uri = Column(URLType())
@@ -88,15 +90,22 @@ class User(DatabaseObject):
         """
         token = urandom(32).encode('hex')
         self._password_reset_token = sha256(token).hexdigest()
-        self._password_reset_token_expires = datetime.utcnow() + timedelta(days=1)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        self._password_reset_token_expires = expires_at
         return token
 
     def validate_password_reset_token(self, token):
         """
-        You can't do a remote timing attack since we hash the input token
+        You can't do a remote timing attack since we hash the input token, well
+        unless you can generate lots of SHA256 collisions, in which case you
+        earned it buddy.
         """
         if datetime.utcnow() < self._password_reset_token_expries:
-            return sha256(token).hexdigest() == self._password_reset_token
+            if sha256(token).hexdigest() == self._password_reset_token:
+                # Token can only be used once, override old value with garbage
+                self._password_reset_token = urandom(32).encode('hex')
+                self._password_reset_token_expires = User.LINUX_EPOCH
+                return True
         return False
 
     @property
@@ -123,6 +132,10 @@ class User(DatabaseObject):
 
     @password.setter
     def password(self, in_password):
+        if len(in_password) < self.MIN_PASSWORD_LENGTH:
+            raise ValueError("Password must be %d+ chars" % (
+                self.MIN_PASSWORD_LENGTH
+            ))
         self._password = self.hash_password(in_password)
 
     @property
@@ -152,7 +165,7 @@ class User(DatabaseObject):
     @domain.setter
     def domain(self, set_domain):
         # Convert to lower case and remove whitespace
-        set_domain = ''.join(set_domain.lower().split())
+        set_domain = ''.join(set_domain.lower().split())[:32]
 
         # Short-cut if domain is the same
         if self._domain == set_domain:
@@ -174,11 +187,14 @@ class User(DatabaseObject):
 
     @chainload_uri.setter
     def chainload_uri(self, in_chainload_uri):
+        """ I've tightend this down to just HTTP/HTTPS Urls """
         if len(in_chainload_uri) <= 3:
             raise ValueError("URI too short")
-        parsed_url = urlparse(in_chainload_uri)
-        if parsed_url.scheme:
-            self._chainload_uri = in_chainload_uri
+        malicious_url = furl(in_chainload_uri)
+        if malicious_url.scheme in ["http", "https"] and malicious_url.host:
+            self._chainload_uri = malicious_url
+        else:
+            raise ValueError("URI scheme must be http/https")
 
     @property
     def page_collection_paths_list(self):
@@ -194,15 +210,15 @@ class User(DatabaseObject):
 
     def to_dict(self):
         return {
+            "id": self.id,
             "created": str(self.created),
-            "updated": str(self.updated),
             "full_name": self.full_name,
             "email": self.email,
             "username": self.username,
             "pgp_key": self.pgp_key,
             "domain": self.domain,
             "email_enabled": self.email_enabled,
-            "chainload_uri": self.chainload_uri,
+            "chainload_uri": str(self.chainload_uri),
             "owner_correlation_key": self.owner_correlation_key
         }
 

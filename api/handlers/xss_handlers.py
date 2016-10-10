@@ -1,7 +1,6 @@
 
 import json
 import os
-import urllib
 
 from tornado.options import options
 
@@ -9,6 +8,7 @@ from handlers.base import BaseHandler
 from models import DBSession
 from models.injection_record import Injection
 from modles.user import User
+from libs.mixins import SendEmailMixin, PersistentDataMixin
 
 
 class XSSPayloadFiresHandler(BaseHandler):
@@ -28,7 +28,6 @@ class XSSPayloadFiresHandler(BaseHandler):
         limit = abs(int(self.get_argument('limit', 25)))
         results = Injection.by_owner(user, limit, offset)
         total = len(user.injections)
-
         return_dict = {
             "results": [result.get_injection_blob() for result in results],
             "total": total,
@@ -37,7 +36,7 @@ class XSSPayloadFiresHandler(BaseHandler):
         self.write(return_dict)
 
 
-class CallbackHandler(BaseHandler):
+class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
     """
     This is the handler that receives the XSS payload data upon it firing in
     someone's browser, it contains things such as session cookies, the page
@@ -70,24 +69,6 @@ class CallbackHandler(BaseHandler):
                 self.send_javascript_callback_message(owner.email, injection_db_record)
             self.write({})
 
-    def send_email( to, subject, body, attachment_file, body_type="html" ):
-        if body_type == "html":
-            body += "<br /><img src=\"https://api." + options.domain + "/" + attachment_file.encode( "utf-8" ) + "\" />" # I'm so sorry.
-
-        email_data = {
-            "from": urllib.quote_plus(options.email_from),
-            "to": urllib.quote_plus(to),
-            "subject": urllib.quote_plus(subject),
-            body_type: urllib.quote_plus(body),
-        }
-
-        thread = unirest.post( "https://api.mailgun.net/v3/" + options.mailgun_sending_domain + "/messages",
-            headers={"Accept": "application/json"},
-            params=email_data,
-            auth=("api", settings["mailgun_api_key"] ),
-            callback=email_sent_callback)
-
-
     def send_javascript_callback_message(self, email, injection_db_record):
         loader = tornado.template.Loader("templates/")
 
@@ -102,14 +83,14 @@ class CallbackHandler(BaseHandler):
     def record_callback_in_database(self, callback_data, request_handler):
         screenshot_file_path = self.upload_screenshot(callback_data["screenshot"])
 
-        injection = Injection(vulnerable_page=callback_data["uri"].encode("utf-8"),
-            victim_ip=callback_data["ip"].encode("utf-8"),
-            referer=callback_data["referrer"].encode("utf-8"),
-            user_agent=callback_data["user-agent"].encode("utf-8"),
-            cookies=callback_data["cookies"].encode("utf-8"),
-            dom=callback_data["dom"].encode("utf-8"),
-            origin=callback_data["origin"].encode("utf-8"),
-            screenshot=screenshot_file_path.encode("utf-8"),
+        injection = Injection(vulnerable_page=callback_data["uri"],
+            victim_ip=callback_data["ip"],
+            referer=callback_data["referrer"],
+            user_agent=callback_data["user-agent"],
+            cookies=callback_data["cookies"],
+            dom=callback_data["dom"],
+            origin=callback_data["origin"],
+            screenshot=screenshot_file_path,
             injection_timestamp=int(time.time()),
             browser_time=int(callback_data["browser-time"])
         )
@@ -131,10 +112,11 @@ class CallbackHandler(BaseHandler):
 
         return injection
 
-    def upload_screenshot(self, base64_screenshot_data_uri):
-        screenshot_filename = "uploads/xsshunter_screenshot_" + os.urandom(100).encode('hex') + ".png"
-        screenshot_file_handler = data_uri_to_file( base64_screenshot_data_uri )
-        local_file_handler = open(screenshot_filename, "w")  # Async IO http://stackoverflow.com/a/13644499/1195812
-        local_file_handler.write( screenshot_file_handler.read() )
-        local_file_handler.close()
-        return screenshot_filename
+    def upload_screenshot(self, screenshot_data_uri):
+        """ Parse data URI and write data to datastore """
+        filename = "screenshot_%s.png" % os.urandom(32).encode('hex')
+        path = os.path.join(os.getcwd(), "uploads", filename)
+        data = screenshot_data_uri.decode('base64')
+        with open(path, "w") as fp:
+            fp.write(data)
+        return filename

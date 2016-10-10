@@ -18,6 +18,8 @@ class InjectionRequest(DatabaseObject):
 
     def to_dict(self):
         return {
+            "id": self.id,
+            "created": str(self.created),
             "request": self.request,
             "injection_key": self.injection_key
         }

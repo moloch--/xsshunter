@@ -37,6 +37,10 @@ class BaseHandler(RequestHandler):
         if hasattr(logging, level) and callable(getattr(logging, level)):
             getattr(logging, level)(message)
 
+    @property
+    def db_session(self):
+        return DBSession()
+
     def options(self):
         pass
 
@@ -74,4 +78,4 @@ class BaseHandler(RequestHandler):
         return User.by_domain(subdomain)
 
     def on_finish(self):
-        DBSession().close()
+        self.db_session.close()

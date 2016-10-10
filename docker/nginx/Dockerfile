@@ -11,6 +11,18 @@ ENV NGINX_VER 1.11.4
 
 
 #
+# > Fix Apt's broke ass
+# https://github.com/docker-library/buildpack-deps/issues/40
+#
+RUN echo \
+   'deb ftp://ftp.us.debian.org/debian/ jessie main\n \
+    deb ftp://ftp.us.debian.org/debian/ jessie-updates main\n \
+    deb http://security.debian.org jessie/updates main\n' \
+    > /etc/apt/sources.list
+
+
+
+#
 # > Install/Compile Nginx + PageSpeed/Spdy
 #
 RUN apt-get update --fix-missing \
@@ -18,7 +30,7 @@ RUN apt-get update --fix-missing \
 
 RUN (wget -O - https://github.com/pagespeed/ngx_pagespeed/archive/v${PAGESPEED_VER}-beta.tar.gz | tar zxf - -C /tmp) \
 	&& (wget -O - https://dl.google.com/dl/page-speed/psol/${PAGESPEED_VER}.tar.gz | tar zxf - -C /tmp/ngx_pagespeed-${PAGESPEED_VER}-beta/) \
-	&& (wget -O - http://nginx.org/download/nginx-${NGINX_VER}.tar.gz | tar zxf - -C /tmp) \
+	&& (wget -O - https://nginx.org/download/nginx-${NGINX_VER}.tar.gz | tar zxf - -C /tmp) \
 	&& cd /tmp/nginx-${NGINX_VER} \
 	&& ./configure --prefix=/etc/nginx/ --sbin-path=/usr/sbin/nginx --add-module=/tmp/ngx_pagespeed-${PAGESPEED_VER}-beta \
 		--with-cc-opt='-O2 -fstack-protector --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2' \

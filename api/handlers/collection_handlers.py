@@ -28,9 +28,9 @@ class CollectPageHandler(BaseHandler):
         user.collected_pages.append(page)
 
         self.logit("Received a collected page for user " + user.username + " with a URI of " + page.uri)
-        DBSession().add(page)
-        DBSession().add(user)
-        DBSession().commit()
+        self.db_session.add(page)
+        self.db_session.add(user)
+        self.db_session.commit()
 
 
 class CollectedPagesHandler(BaseHandler):
