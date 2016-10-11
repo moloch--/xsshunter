@@ -15,6 +15,7 @@ class HomepageHandler(BaseHandler):
         self.set_header("Access-Control-Allow-Methods", "OPTIONS, PUT, DELETE, POST, GET")
         self.set_header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Origin, Authorization, Accept, Accept-Encoding")
 
+    @json_api(None)
     def get(self, path):
         domain = self.request.headers.get('Host')
         user = User.by_domain(domain)
@@ -31,7 +32,7 @@ class HomepageHandler(BaseHandler):
         # Render a personalized probe.js
         js = Probe.js(probe_id,
                       domain=user.domain,
-                      gpg_key=user.pgp_key,
+                      pgp_key=user.pgp_key,
                       chainload=user.chainload_uri,
                       page_collections=user.page_collection_paths_list)
         self.set_header("Content-Type", "application/javascript")
@@ -41,6 +42,7 @@ class HomepageHandler(BaseHandler):
 class UserInformationHandler(BaseHandler):
 
     @authenticated
+    @json_api(None)
     def get(self):
         user = self.get_current_user()
         self.write(user.to_dict())
@@ -52,9 +54,8 @@ class UserInformationHandler(BaseHandler):
             "gpg_key": {"type": "string"}
         }
     })
-    def put(self):
+    def put(self, req):
         user = self.get_current_user()
-
         self.db_session.add(user)
         self.db_session.commit()
         self.write(user.to_dict())

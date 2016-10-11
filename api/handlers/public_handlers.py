@@ -18,7 +18,8 @@ class LoginHandler(BaseHandler):
         "type": "object",
         "properites": {
             "username": {"type": "string"},
-            "password": {"type": "string"}
+            "password": {"type": "string"},
+            "otp": {"type": "string"}
         },
         "required": ["username", "password"]
     })
@@ -29,11 +30,14 @@ class LoginHandler(BaseHandler):
             self.error("Invalid username or password supplied")
             self.logit("Someone failed to log in as  %r" % req["username"],
                        "warn")
-            return
         elif user.compare_password(req.get("password", "")):
-            self.start_session(user)
-            self.logit("Someone logged in as " + req["username"])
-            return
+            if user.otp_enabled:
+                if user.validate_otp(req.get("otp", "")):
+                    self.start_session(user)
+                else:
+                    self.error("Invalid otp supplied")
+            else:
+                self.start_session(user)
         else:
             self.error("Invalid username or password supplied")
 
@@ -147,8 +151,8 @@ class PasswordResetHandler(BaseHandler):
             token = req.get("password_reset_token", "")
             if user.validate_password_reset_token(token):
                 user.password = req.get("new_password", "")
-                DBSession().add(user)
-                DBSession().commit()
+                self.db_session.add(user)
+                self.db_session.commit()
                 self.write({"success": True})
         self.write({"success": False})
 

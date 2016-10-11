@@ -5,7 +5,7 @@ Copyright 2015
 """
 
 from sqlalchemy import Column, ForeignKey, and_
-from sqlalchemy.types import BigInteger, String, Text
+from sqlalchemy.types import BigInteger, String, Text, Unicode
 
 from libs.database_datatypes import UUIDType
 from models import DBSession
@@ -16,14 +16,14 @@ class Injection(DatabaseObject):
 
     owner_id = Column(UUIDType(), ForeignKey('user._id'), nullable=False)
 
-    content_type = Column(String(100))  # JavaScript/Image
-    vulnerable_page = Column(String(3000))
-    victim_ip = Column(String(100))
-    referer = Column(String(3000))
-    user_agent = Column(String(3000))
-    cookies = Column(String(5000))
+    content_type = Column(Unicode(100))  # JavaScript/Image
+    vulnerable_page = Column(Unicode(3000))
+    victim_ip = Column(Unicode(100))
+    referer = Column(Unicode(3000))
+    user_agent = Column(Unicode(3000))
+    cookies = Column(Unicode(5000))
     dom = Column(Text())
-    origin = Column(String(300))
+    origin = Column(Unicode(300))
     screenshot = Column(String(300))
     browser_time = Column(BigInteger())
     correlated_request = Column(Text())

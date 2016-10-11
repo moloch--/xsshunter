@@ -9,12 +9,12 @@ from tornado.options import define, options
 # API Settings
 define("domain",
        group="application",
-       default=os.environ.get('XSSHUNTER_DOMAIN', "localhost"),
+       default=os.environ.get("XSSHUNTER_DOMAIN", "localhost"),
        help="the domain the api is running on")
 
 define("listen_port",
        group="application",
-       default=os.environ.get('XSSHUNTER_LISTEN_PORT', "8888"),
+       default=os.environ.get("XSSHUNTER_LISTEN_PORT", "8888"),
        help="run instances starting the given port",
        type=str)
 
@@ -28,25 +28,24 @@ define("x_headers",
 # Email settings
 define("email_from",
        group="email",
-       default=os.environ.get('XSSHUNTER_EMAIL_FROM', "xsshunter@example.com"),
+       default=os.environ.get("XSSHUNTER_EMAIL_FROM", "xsshunter@example.com"),
        help="email from header")
 
 define("mailgun_api_key",
        group="email",
-       default=os.environ.get('XSSHUNTER_MAILGUN_API_KEY', "example.com"),
+       default=os.environ.get("XSSHUNTER_MAILGUN_API_KEY", "example.com"),
        help="the domain associated with the mailgun account")
 
 define("mailgun_sending_domain",
        group="email",
-       default=os.environ.get('XSSHUNTER_MAILGUN_SENDING_DOMAIN',
-                              "example.com"),
+       default=os.environ.get("XSSHUNTER_MAILGUN_SENDING_DOMAIN", "example.com"),
        help="the domain associated with the mailgun account")
 
 
 # Datastore settings
 define("mailgun_sending_domain",
        group="datastore",
-       default=os.environ.get('XSSHUNTER_DATASTORE_FILESYSTEM_DIR', "uploads"),
+       default=os.environ.get("XSSHUNTER_DATASTORE_FILESYSTEM_DIR", "uploads"),
        help="directory that the filesystem datastore should write to")
 
 
@@ -91,8 +90,7 @@ define("sql_pool_recycle",
 # Cookie settings
 define("cookie_secret",
        group="secret",
-       default=os.environ.get("XSSHUNTER_COOKIE_SECRET",
-                              os.urandom(32).encode('hex')),
+       default=os.environ.get("XSSHUNTER_COOKIE_SECRET", os.urandom(32).encode("hex")),
        help="the cookie hmac secret",
        type=str)
 
@@ -106,7 +104,7 @@ def start_api():
     start_api_server()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     options.parse_command_line()
     start_api()

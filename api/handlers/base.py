@@ -2,6 +2,7 @@
 import json
 import logging
 
+from tornado import template
 from tornado.options import options
 from tornado.web import RequestHandler
 
@@ -11,6 +12,8 @@ from models.user import User
 
 
 class BaseHandler(RequestHandler):
+
+    TEMPLATE_DIR = "templates/"
 
     def __init__(self, *args, **kwargs):
         super(BaseHandler, self).__init__(*args, **kwargs)
@@ -40,6 +43,10 @@ class BaseHandler(RequestHandler):
     @property
     def db_session(self):
         return DBSession()
+
+    @property
+    def template_loader(self):
+        return template.Loader(self.TEMPLATE_DIR)
 
     def options(self):
         pass

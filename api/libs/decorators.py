@@ -80,7 +80,7 @@ def authenticated(method):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         user = self.get_current_user()
-        if user is not None:
+        if user is not None and not user.locked:
             return method(self, *args, **kwargs)
         else:
             logging.debug("User from session does not exist")
@@ -90,3 +90,21 @@ def authenticated(method):
             "errors": "You are not authenticated"
         })
     return wrapper
+
+
+def authorized(permission):
+    """ Checks user's permissions """
+
+    def func(method):
+        @functools.wraps(method)
+        def wrapper(self, *args, **kwargs):
+            user = self.get_current_user()
+            if user is not None and user.has_permission(permission):
+                return method(self, *args, **kwargs)
+            else:
+                logging.warning("Rejecting unauthorized request from '%s'",
+                                user.name)
+            self.set_status(NOT_AUTHORIZED)
+            self.write({"errors": ["You are not authorized"]})
+        return wrapper
+    return func

@@ -5,13 +5,13 @@ import os
 from tornado.options import options
 
 from handlers.base import BaseHandler
-from models import DBSession
 from models.injection_record import Injection
 from modles.user import User
 from libs.mixins import SendEmailMixin, PersistentDataMixin
 
 
 class XSSPayloadFiresHandler(BaseHandler):
+
     """
     Endpoint for querying for XSS payload fire data.
 
@@ -21,6 +21,7 @@ class XSSPayloadFiresHandler(BaseHandler):
         offset
         limit
     """
+
     def get(self):
         self.logit("User retrieved their injection results")
         user = self.get_authenticated_user()
@@ -37,6 +38,7 @@ class XSSPayloadFiresHandler(BaseHandler):
 
 
 class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
+
     """
     This is the handler that receives the XSS payload data upon it firing in
     someone's browser, it contains things such as session cookies, the page
@@ -63,22 +65,23 @@ class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
             callback_data = json.loads(self.request.body)
             callback_data['ip'] = self.request.remote_ip
             injection_db_record = self.record_callback_in_database( callback_data, self )
-            self.logit( "User " + owner.username + " just got an XSS callback for URI " + injection_db_record.vulnerable_page )
+            self.logit("User " + owner.username + " just got an XSS callback for URI " + injection_db_record.vulnerable_page)
 
             if owner.email_enabled:
                 self.send_javascript_callback_message(owner.email, injection_db_record)
             self.write({})
 
     def send_javascript_callback_message(self, email, injection_db_record):
-        loader = tornado.template.Loader("templates/")
 
         injection_data = injection_db_record.get_injection_blob()
 
-        email_html = loader.load("xss_email_template.htm").generate(injection_data=injection_data, domain=options.domain)
-        return send_email(email, "[XSS Hunter] XSS Payload Fired On " + injection_data['vulnerable_page'], email_html, injection_db_record.screenshot )
+        email_template = self.template_loader.load("xss_email_template.htm")
+        email_html = email_template.generate(injection_data=injection_data,
+                                             domain=options.domain)
+        return send_email(email, "[XSS Hunter] XSS Payload Fired On " + injection_data['vulnerable_page'], email_html, injection_db_record.screenshot)
 
     def pgp_encrypted_callback_message(self, email_data, email):
-        return send_email( email, "[XSS Hunter] XSS Payload Message (PGP Encrypted)", email_data, False, "text" )
+        return send_email(email, "[XSS Hunter] XSS Payload Message (PGP Encrypted)", email_data, False, "text")
 
     def record_callback_in_database(self, callback_data, request_handler):
         screenshot_file_path = self.upload_screenshot(callback_data["screenshot"])
@@ -102,13 +105,13 @@ class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
         if callback_data["injection_key"] != "[PROBE_ID]":
             correlated_request_entry = session.query( InjectionRequest ).filter_by( injection_key=callback_data["injection_key"] ).filter_by( owner_correlation_key=owner_user.owner_correlation_key ).first()
 
-            if correlated_request_entry != None:
+            if correlated_request_entry is not None:
                 injection.correlated_request = correlated_request_entry.request
         else:
             injection.correlated_request = "Could not correlate XSS payload fire with request!"
 
-        DBSession().add(injection)
-        DBSession().commit()
+        self.db_session.add(injection)
+        self.db_session.commit()
 
         return injection
 

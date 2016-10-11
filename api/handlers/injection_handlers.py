@@ -22,10 +22,13 @@ class InjectionRequestHandler(BaseHandler):
 
     Sending two correlation requests means that the previous injection_key entry will be replaced.
     """
+
     @json_api({
         "type": "object",
         "properites": {
-
+            "request": {"type": "string"},
+            "injection_key": {"type": "string"},
+            "owner_correlation_key": {"type": "string"}
         }
     })
     def post(self, req):
@@ -48,12 +51,12 @@ class InjectionRequestHandler(BaseHandler):
         self.logit("User " + owner.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key)
 
         # Replace any previous injections with the same key and owner
-        session.query(InjectionRequest).filter_by(injection_key=injection_key).filter_by(owner_correlation_key=owner_correlation_key).delete()
+        self.db_session.query(InjectionRequest).filter_by(injection_key=injection_key).filter_by(owner_correlation_key=owner_correlation_key).delete()
 
         return_data["success"] = True
         return_data["message"] = "Injection request successfully recorded!"
-        session.add( injection_request )
-        session.commit()
+        self.db_session.add( injection_request )
+        self.db_session.commit()
         self.write(return_data)
 
 

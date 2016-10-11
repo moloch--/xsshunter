@@ -1,3 +1,6 @@
+"""
+
+"""
 
 import gzip
 import json
@@ -91,7 +94,7 @@ class PersistentDataMixin(object):
         It is the caller's responsibility to track filenames/access/etc, we're
         just a blind key<->value data store.
         """
-        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        save_dir = os.path.abspath(options.datastore_filesystem_dir)
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         filename = sha256(filepath).hexdigest()
@@ -102,7 +105,7 @@ class PersistentDataMixin(object):
             fp.write(data)
 
     def _filesystem_read(self, filepath):
-        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        save_dir = os.path.abspath(options.datastore_filesystem_dir)
         filename = sha256(filepath).hexdigest()
         save_file = os.path.join(save_dir, filename)
         if os.path.exists(save_file) and os.path.isfile(save_file):
@@ -112,7 +115,7 @@ class PersistentDataMixin(object):
             raise ValueError("File not found")
 
     def _filesystem_delete(self, filepath):
-        save_dir = os.path.join(os.getcwd(), options.datastore_filesystem_dir)
+        save_dir = os.path.abspath(options.datastore_filesystem_dir)
         filename = sha256(filepath).hexdigest()
         save_file = os.path.join(save_dir, filename)
         if os.path.exists(save_file) and os.path.isfile(save_file):
