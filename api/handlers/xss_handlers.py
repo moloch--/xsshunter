@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+@author: mandatory, moloch
+Copyright 2016
+"""
 
 import json
 import os
@@ -10,7 +15,7 @@ from modles.user import User
 from libs.mixins import SendEmailMixin, PersistentDataMixin
 
 
-class XSSPayloadFiresHandler(BaseHandler):
+class ExfiltratedDataHandler(BaseHandler):
 
     """
     Endpoint for querying for XSS payload fire data.
@@ -27,17 +32,15 @@ class XSSPayloadFiresHandler(BaseHandler):
         user = self.get_authenticated_user()
         offset = abs(int(self.get_argument('offset', 0)))
         limit = abs(int(self.get_argument('limit', 25)))
-        results = Injection.by_owner(user, limit, offset)
-        total = len(user.injections)
-        return_dict = {
-            "results": [result.get_injection_blob() for result in results],
-            "total": total,
-            "success": True
-        }
-        self.write(return_dict)
+        injections = Injection.by_owner(user, limit, offset)
+        self.write({
+            "success": True,
+            "injections": [injection.to_dict() for injection in injections],
+            "total": len(user.injections)
+        })
 
 
-class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
+class XssCallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
 
     """
     This is the handler that receives the XSS payload data upon it firing in
@@ -102,8 +105,8 @@ class CallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
         injection.owner_id = owner_user.id
 
         # Check if this is correlated to someone's request.
-        if callback_data["injection_key"] != "[PROBE_ID]":
-            correlated_request_entry = session.query( InjectionRequest ).filter_by( injection_key=callback_data["injection_key"] ).filter_by( owner_correlation_key=owner_user.owner_correlation_key ).first()
+        if callback_data["injection_id"] != "[PROBE_ID]":
+            correlated_request_entry = session.query( InjectionRequest ).filter_by( injection_key=callback_data["injection_id"] ).filter_by( owner_correlation_key=owner_user.owner_correlation_key ).first()
 
             if correlated_request_entry is not None:
                 injection.correlated_request = correlated_request_entry.request

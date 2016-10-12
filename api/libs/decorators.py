@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch
-Copyright 2015
+@author: mandatory, moloch
+Copyright 2016
 """
 
 import functools
@@ -65,10 +65,10 @@ def json_api(schema):
                         "errors": str(error)
                     })
                 else:
-                    self.write({"errors": [{
+                    self.write({
                         "success": False,
-                        "errors": "JSON request not formatted properly"}
-                    ]})
+                        "errors": "JSON request not formatted properly"
+                    })
                 self.finish()
         return wrapper
     return func

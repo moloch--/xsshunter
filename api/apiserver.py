@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+@author: mandatory, moloch
+Copyright 2016
+"""
 
 import logging
 import os

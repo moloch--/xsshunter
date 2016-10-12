@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+@author: mandatory, moloch
+Copyright 2016
+"""
 
 import json
 import os
@@ -43,15 +48,17 @@ class LoginHandler(BaseHandler):
 
     def start_session(self, user):
         csrf_token = os.urandom(50).encode('hex')
+        user.last_login = datetime.utcnow()
+        self.db_session.add(user)
+        self.db_session.commit()
         self.set_secure_cookie("session", json.dumps({
             "user": user.id,
             "expires": str(datetime.utcnow() + timedelta(days=1))
         }), secure=True)
         self.set_secure_cookie("csrf", csrf_token, secure=True)
-        self.write(json.dumps({
-            "success": True,
-            "csrf_token": csrf_token,
-        }))
+        self.write({
+            "success": True
+        })
 
 
 class RegisterHandler(BaseHandler):

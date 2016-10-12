@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch
-Copyright 2015
+@author: mandatory, moloch
+Copyright 2016
 """
 
 import logging
 
 from furl import furl
+
 
 PYTHON_POSTGRES_DRIVER = "psycopg2"
 

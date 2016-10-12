@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch
-Copyright 2015
+@author: mandatory, moloch
+Copyright 2016
 """
 
 from sqlalchemy import Column, ForeignKey

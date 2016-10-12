@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch
+@author: mandatory, moloch
 Copyright 2016
 """
 # pylint: disable=C0103

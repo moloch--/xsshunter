@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 """
+@author: mandatory, moloch
+Copyright 2016
+
 A basic script to generate docker-compose configuration files,
 this is the easiest way to get the whole stack running on one machine.
 """

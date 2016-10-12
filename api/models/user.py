@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-@author: moloch, mandatory
-Copyright 2015
+@author: mandatory, moloch
+Copyright 2016
 """
 
 import re
@@ -31,7 +31,6 @@ class User(DatabaseObject):
 
     DOMAIN_CHARS = digits + ascii_lowercase
     EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
-    DOMAIN_REGEX = r"^[a-z0-9]+$"
     LINUX_EPOCH = datetime(1970, 1, 1, 0, 0)
     MIN_PASSWORD_LENGTH = 1 if options.debug else 12
 
@@ -198,26 +197,19 @@ class User(DatabaseObject):
 
     @domain.setter
     def domain(self, set_domain):
-        # Convert to lower case and remove whitespace
         assert isinstance(set_domain, basestring)
 
-        if len(set_domain) < 1:
-            raise ValueError("Domain is too short")
+        if not 0 < len(set_domain) <= 32:
+            raise ValueError("Invalid domain length")
 
         if any(char not in self.DOMAIN_CHARS for char in set_domain):
-            raise ValueError("Invalid domain")
-
-        # Short-cut if domain is the same
-        if self._domain == set_domain:
-            return
-
-        # Check for only valid characters
-        if not re.search(self.DOMAIN_REGEX, set_domain, flags=0):
-            raise ValueError("Invalid domain")
+            raise ValueError("Invalid domain, domains can only contain %s" % (
+                self.DOMAIN_CHARS
+            ))
 
         # Check for duplicates
         if self.by_domain(set_domain) is not None:
-            raise ValueError("Invalid domain")
+            raise ValueError("Duplicate domain")
         else:
             self._domain = set_domain
 
@@ -315,8 +307,14 @@ class User(DatabaseObject):
             "domain": self.domain,
             "email_enabled": self.email_enabled,
             "chainload_uri": str(self.chainload_uri),
-            "owner_correlation_key": self.owner_correlation_key
         }
+
+    def to_admin_dict(self):
+        data = self.to_dict()
+        data["updated"] = str(self.updated)
+        data["locked"] = self.locked
+        data["last_login"] = str(self.last_login)
+        return data
 
     def __str__(self):
         return self.username + " - ( " + self.full_name + " )"
