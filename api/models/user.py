@@ -6,21 +6,21 @@ Copyright 2016
 
 import re
 from datetime import datetime, timedelta
-from hashlib import sha256
+from hashlib import sha512
 from os import urandom
+from string import ascii_lowercase, digits
 from time import time
-from string import digits, ascii_lowercase
 
 import bcrypt
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.twofactor.totp import TOTP
 from cryptography.hazmat.primitives.hashes import SHA512
 from cryptography.hazmat.primitives.twofactor import InvalidToken
+from cryptography.hazmat.primitives.twofactor.totp import TOTP
 from furl import furl
 from sqlalchemy import Column
 from sqlalchemy.orm import backref, relationship
-from sqlalchemy.types import Boolean, DateTime, String, Unicode, Text
-from sqlalchemy_utils import URLType, EncryptedType
+from sqlalchemy.types import Boolean, DateTime, String, Text, Unicode
+from sqlalchemy_utils import EncryptedType, URLType
 from tornado.options import options
 
 from models import DBSession
@@ -36,13 +36,22 @@ class User(DatabaseObject):
 
     OTP_LENGTH = 8
     OTP_STEP = 30
-    OTP_ISSUER = "XSS Hunter"
+    OTP_ISSUER = "XSS-Hunter"
 
-    _full_name = Column(Unicode(120))
-    _username = Column(Unicode(80))
+    FULL_NAME_LENGTH = 120
+    _full_name = Column(Unicode(FULL_NAME_LENGTH))
+
+    USERNAME_LENGTH = 80
+    _username = Column(Unicode(USERNAME_LENGTH), unique=True, nullable=False)
+
     _password = Column(String(120))
-    _email = Column(String(120))
-    _domain = Column(String(32), unqiue=True)
+
+    EMAIL_LENGTH = 120
+    _email = Column(String(EMAIL_LENGTH), unqiue=True, nullable=False)
+
+    DOMAIN_LENGTH = 32
+    _domain = Column(String(DOMAIN_LENGTH), unqiue=True)
+
     _pgp_key = Column(Text())
     _chainload_uri = Column(URLType())
     email_enabled = Column(Boolean, default=False)
@@ -53,10 +62,10 @@ class User(DatabaseObject):
     _otp_secret = Column(EncryptedType(String(128), options.database_secret))
 
     _password_reset_token_expires = Column(DateTime, default=LINUX_EPOCH)
-    _password_reset_token = Column(String(64), nullable=False,
+    _password_reset_token = Column(String(128), nullable=False,
                                    default=lambda: urandom(32).encode('hex'))
 
-    _api_key = Column(String(64), nullable=False,
+    _api_key = Column(String(128), nullable=False,
                       default=lambda: urandom(32).encode('hex'))
 
     injections = relationship("InjectionRecord",
@@ -80,13 +89,13 @@ class User(DatabaseObject):
 
     @classmethod
     def by_username(cls, username):
-        username = username[:80].strip()
+        username = ''.join(username[:80].split())
         return DBSession().query(cls).filter_by(_username=username).first()
 
     @classmethod
     def by_api_key(cls, api_key):
         return DBSession().query(cls).filter_by(
-            _api_key=sha256(api_key).hexdigest()
+            _api_key=sha512(api_key).digest()
         ).first()
 
     @staticmethod
@@ -97,7 +106,7 @@ class User(DatabaseObject):
         """
         if salt is None:
             salt = bcrypt.gensalt(10)
-        return bcrypt.hashpw(sha256(password).hexdigest(), salt)
+        return bcrypt.hashpw(sha512(password).digest(), salt)
 
     @property
     def permission_names(self):
@@ -117,24 +126,24 @@ class User(DatabaseObject):
         token as a hash in the database.
         """
         token = urandom(32).encode('hex')
-        self._password_reset_token = sha256(token).hexdigest()
+        self._password_reset_token = sha512(token).hexdigest()
         expires_at = datetime.utcnow() + timedelta(hours=1)
         self._password_reset_token_expires = expires_at
         return token
 
     def generate_api_key(self):
         token = urandom(32).encode('hex')
-        self._api_key = sha256(token).hexdigest()
+        self._api_key = sha512(token).hexdigest()
         return token
 
     def validate_password_reset_token(self, token):
         """
         You can't do a remote timing attack since we hash the input token, well
-        unless you can generate lots of SHA256 collisions, in which case you
+        unless you can generate lots of sha512 collisions, in which case you
         earned it buddy.
         """
-        if datetime.utcnow() < self._password_reset_token_expries:
-            if sha256(token).hexdigest() == self._password_reset_token:
+        if datetime.utcnow() < self._password_reset_token_expires:
+            if sha512(token).hexdigest() == self._password_reset_token:
                 # Token can only be used once, override old value with garbage
                 self._password_reset_token = urandom(32).encode('hex')
                 self._password_reset_token_expires = User.LINUX_EPOCH
@@ -148,7 +157,7 @@ class User(DatabaseObject):
     @full_name.setter
     def full_name(self, in_fullname):
         assert isinstance(in_fullname, basestring)
-        self._full_name = in_fullname[:120].strip()
+        self._full_name = in_fullname[:self.FULL_NAME_LENGTH].strip()
 
     @property
     def username(self):
@@ -157,7 +166,7 @@ class User(DatabaseObject):
     @username.setter
     def username(self, in_username):
         assert isinstance(in_username, basestring)
-        self.username = in_username[:80].strip()
+        self.username = ''.join(in_username.split())[:self.USERNAME_LENGTH]
 
     @property
     def password(self):

@@ -7,7 +7,9 @@ Copyright 2016
 
 
 import re
+import time
 import uuid
+
 from base64 import urlsafe_b64encode
 from datetime import datetime
 
@@ -15,7 +17,7 @@ from sqlalchemy import Column, event
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.types import DateTime
 
-from libs.database_datatypes import UUIDType
+from libs.sql_datatypes import UUIDType
 from models import DBSession
 
 
@@ -28,8 +30,8 @@ class _DatabaseObject(object):
     """
 
     _id = Column(UUIDType(), primary_key=True, default=uuid.uuid4)
-    created = Column(DateTime, default=datetime.utcnow)
-    updated = Column(DateTime, default=datetime.utcnow)
+    _created = Column(DateTime, default=datetime.utcnow)
+    _updated = Column(DateTime, default=datetime.utcnow)
 
     @declared_attr
     def __tablename__(self):
@@ -60,6 +62,22 @@ class _DatabaseObject(object):
         Returns a the object with id of guid, can accept a string of UUID class
         """
         return DBSession().query(cls).filter_by(_id=guid).first()
+
+    @property
+    def created(self):
+        return time.mktime(self._created.timetuple())
+
+    @created.setter
+    def created(self, value):
+        self._created = value
+
+    @property
+    def updated(self):
+        return time.mktime(self._updated.timetuple())
+
+    @updated.setter
+    def updated(self, value):
+        self._updated = value
 
 
 # Create a usable class with SQLAlchemy's declarative_base

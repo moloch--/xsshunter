@@ -35,7 +35,6 @@ API_HANDLERS = [
     # Public handlers
     (r"/api/register", RegisterHandler),
     (r"/api/login", LoginHandler),
-    (r"/api/logout", LogoutHandler),
     (r"/api/contactus", ContactUsHandler),
     (r"/api/health", HealthHandler),
 

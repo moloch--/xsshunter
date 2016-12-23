@@ -4,15 +4,19 @@
 Copyright 2016
 """
 
-import json
 import os
+import json
+import logging
 
+from tornado.log import app_log
 from tornado.options import options
 
 from handlers.base import BaseHandler
-from models.injection_record import Injection
-from modles.user import User
+from models.injection import Injection
+from models.user import User
 from libs.mixins import SendEmailMixin, PersistentDataMixin
+
+
 
 
 class ExfiltratedDataHandler(BaseHandler):
@@ -28,8 +32,8 @@ class ExfiltratedDataHandler(BaseHandler):
     """
 
     def get(self):
-        self.logit("User retrieved their injection results")
-        user = self.get_authenticated_user()
+        app_log.info("User retrieved their injection results")
+        user = self.get_current_user()
         offset = abs(int(self.get_argument('offset', 0)))
         limit = abs(int(self.get_argument('limit', 25)))
         injections = Injection.by_owner(user, limit, offset)
@@ -47,11 +51,6 @@ class XssCallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
     someone's browser, it contains things such as session cookies, the page
     DOM, a screenshot of the page, etc.
     """
-
-    def initialize(self):
-        self.set_header('Access-Control-Allow-Origin', '*')
-        self.set_header('Access-Control-Allow-Methods', 'POST, GET, HEAD, OPTIONS')
-        self.set_header('Access-Control-Allow-Headers', 'X-Requested-With')
 
     def post(self):
         owner = User.by_domain()
@@ -98,8 +97,7 @@ class XssCallbackHandler(BaseHandler, SendEmailMixin, PersistentDataMixin):
             origin=callback_data["origin"],
             screenshot=screenshot_file_path,
             injection_timestamp=int(time.time()),
-            browser_time=int(callback_data["browser-time"])
-        )
+            browser_time=int(callback_data["browser-time"]))
         injection.generate_injection_id()
         owner_user = request_handler.get_user_from_subdomain()
         injection.owner_id = owner_user.id

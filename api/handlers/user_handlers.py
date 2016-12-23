@@ -26,11 +26,11 @@ class OtpHandler(BaseHandler):
             "otp_enabled": {"type": "boolean"}
         }
     })
-    def post(self, req):
+    def post(self):
         user = self.get_current_user()
-        user.otp_enabled = bool(req.get("otp_enabled", True))
-        self.db_session.add(user)
-        self.db_session.commit()
+        user.otp_enabled = bool(self.get_argument("otp_enabled", True))
+        self.dbsession.add(user)
+        self.dbsession.commit()
         if user.otp_enabled:
             self.write({
                 "success": True,
@@ -50,11 +50,11 @@ class PgpKeyHandler(BaseHandler):
         },
         "required": ["pgp_key"]
     })
-    def post(self, req):
+    def post(self):
         user = self.get_current_user()
-        user.pgp_key = req.get("pgp_key", "")
-        self.db_session.add(user)
-        self.db_session.commit()
+        user.pgp_key = self.get_argument("pgp_key", "")
+        self.dbsession.add(user)
+        self.dbsession.commit()
         self.write(user.to_dict())
 
 
@@ -70,8 +70,8 @@ class ApiKeyHandler(BaseHandler):
     def post(self):
         user = self.get_current_user()
         api_key = user.generate_api_key()
-        self.db_session.add(user)
-        self.db_session.commit()
+        self.dbsession.add(user)
+        self.dbsession.commit()
         self.write({
             "success": True,
             "api_key": api_key

@@ -99,6 +99,27 @@ define("cookie_secret",
        type=str)
 
 
+# Debug options
+define("debug",
+       default=bool(os.environ.get("XSSHUNTER_DEBUG", False)),
+       help="start server in debugging mode",
+       group="debug",
+       type=bool)
+
+define("debug_db",
+       default=bool(os.environ.get("XSSHUNTER_DEBUG_DB", False)),
+       group="debug",
+       help="enable database debugging",
+       type=bool)
+
+define("debug_db_echo",
+       default=bool(os.environ.get("XSSHUNTER_DEBUG_DB_ECHO", False)),
+       group="debug",
+       help="echo all sql to the logs",
+       type=bool)
+
+
+
 def start_api():
     """ Starts the main application """
     from handlers import start_api_server

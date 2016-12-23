@@ -1,9 +1,10 @@
 #
 #  Dockerfile for XSS Hunter
-#  v0.1 - By Moloch
 #
+
 FROM xsshunter_python:latest
 MAINTAINER moloch
+MAINTAINER mandatory
 
 #
 # > Copy code over
@@ -11,9 +12,7 @@ MAINTAINER moloch
 RUN mkdir /opt/xsshunter
 ADD . /opt/xsshunter
 
-
 #
 # > Entrypoint & Volumes
 #
-VOLUME ["/opt/xsshunter/uploads"]
-ENTRYPOINT ["/opt/xsshunter/apiserver.py"]
+ENTRYPOINT ["/opt/xsshunter/xsshunter.py"]

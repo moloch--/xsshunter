@@ -52,10 +52,7 @@ def print_header():
 
 def yes_no_prompt(message):
     """ Yes/No prompt returns True for 'y' or 'yes' """
-    return raw_input(PROMPT + message + "? [Y/n]: ").lower().strip() in [
-        "y", "yes"
-    ]
-
+    return raw_input(PROMPT + message + "? [Y/n]: ").lower().startswith("y")
 
 try:
     import yaml

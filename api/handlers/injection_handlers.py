@@ -14,6 +14,9 @@ from models.injection_record import InjectionRequest
 from libs.decorators import json_api
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class InjectionRequestHandler(BaseHandler):
 
     """
@@ -53,7 +56,7 @@ class InjectionRequestHandler(BaseHandler):
             })
             return
 
-        self.logit("User " + owner.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key)
+        LOGGER.info("User " + owner.username + " just sent us an injection attempt with an ID of " + injection_request.injection_key)
 
         # Replace any previous injections with the same key and owner
         self.db_session.query(InjectionRequest).filter_by(injection_key=injection_key).filter_by(owner_correlation_key=owner_correlation_key).delete()

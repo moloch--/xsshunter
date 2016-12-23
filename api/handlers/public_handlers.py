@@ -8,16 +8,20 @@ import json
 import os
 from datetime import datetime, timedelta
 
+from furl import furl
+from tornado.log import app_log
 from tornado.options import options
 
-from furl import furl
 from handlers.base import BaseHandler
 from libs.decorators import json_api
 from libs.mixins import SendEmailMixin
+from libs.validation_errors import ValidationError
 from models.user import User
 
 
 class LoginHandler(BaseHandler):
+
+    """ Handles basic username/password logins """
 
     @json_api({
         "type": "object",
@@ -31,26 +35,21 @@ class LoginHandler(BaseHandler):
     def post(self, req):
         user = User.by_username(req.get("username", ""))
         if user is None:
-            User.hash_password(req.get("username", ""))
-            self.error("Invalid username or password supplied")
-            self.logit("Someone failed to log in as  %r" % req["username"],
-                       "warn")
-        elif user.compare_password(req.get("password", "")):
-            if user.otp_enabled:
-                if user.validate_otp(req.get("otp", "")):
-                    self.start_session(user)
-                else:
-                    self.error("Invalid otp supplied")
-            else:
-                self.start_session(user)
-        else:
-            self.error("Invalid username or password supplied")
+            User.hash_password(req.get("password", ""))
+            raise ValidationError("Invalid username or password supplied")
+            app_log.warn("Someone failed to log in as  %r" % req["username"])
+            return
+        otp_valid = user.validateOtp(req.get("otp", "")) if user.opt_enabled else True
+        if otp_valid and user.compare_password(req.get("password", "")):
+            self.start_session(user)
+        raise ValidationError("Invalid username or password supplied")
 
     def start_session(self, user):
+        """ Starts a session for the current user """
         csrf_token = os.urandom(50).encode('hex')
         user.last_login = datetime.utcnow()
-        self.db_session.add(user)
-        self.db_session.commit()
+        self.dbsession.add(user)
+        self.dbsession.commit()
         self.set_secure_cookie("session", json.dumps({
             "user": user.id,
             "expires": str(datetime.utcnow() + timedelta(days=1))
@@ -62,6 +61,8 @@ class LoginHandler(BaseHandler):
 
 
 class RegisterHandler(BaseHandler):
+
+    """ Creates a new user """
 
     @json_api({
         "type": "object",
@@ -98,15 +99,17 @@ class RegisterHandler(BaseHandler):
 
         # add the new user to the database
         new_user = User(username=username, domain=domain, password=password)
-        self.db_session.add(new_user)
-        self.db_session.commit()
-        self.logit("New user successfully registered with username of %r" % (
-            req["username"]
-        ))
-        self.write({"success": True})
+        self.dbsession.add(new_user)
+        self.dbsession.commit()
+        app_log.info("New user successfully registered with username of %r", req["username"])
+        self.write({
+            "success": True
+        })
 
 
 class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
+
+    """ Handles password resets """
 
     @json_api({
         "type": "object",
@@ -115,18 +118,18 @@ class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
         },
         "required": ["username"]
     })
-    def post(self, req):
+    def post(self):
         """
         There is a slight timing attack here, you could potentially detect if
         the system sent an email or not, but it's not really a big deal since
         our sign-up form also leaks usernames by design. We pass the token via
         a URI fragment to avoid it getting logged by the webserver.
         """
-        user = User.by_username(req.get("username", ""))
+        user = User.by_username(self.get_argument("username", ""))
         if user is not None:
             token = user.generate_password_reset_token()
-            self.db_session.add(user)
-            self.db_session.commit()
+            self.dbsession.add(user)
+            self.dbsession.commit()
             reset_url = furl()
             reset_url.scheme = "https"
             reset_url.hostname = options.domain
@@ -135,7 +138,9 @@ class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
             body = self.render_password_reset_email(user, str(reset_url))
             self.send_email(user.email, "Password Reset", body)
             del token  # Snake oil
-        self.write({"success": True})
+        self.write({
+            "success": True
+        })
 
     def render_password_reset_email(self, user, url):
         pass  # TODO: Create a template
@@ -158,8 +163,8 @@ class PasswordResetHandler(BaseHandler):
             token = req.get("password_reset_token", "")
             if user.validate_password_reset_token(token):
                 user.password = req.get("new_password", "")
-                self.db_session.add(user)
-                self.db_session.commit()
+                self.dbsession.add(user)
+                self.dbsession.commit()
                 self.write({"success": True})
         self.write({"success": False})
 
@@ -175,12 +180,12 @@ class ContactUsHandler(BaseHandler, SendEmailMixin):
         },
         "required": ["name", "email", "body"]
     })
-    def post(self, req):
-        self.logit("Someone just used the 'Contact Us' form.")
+    def post(self):
+        app_log.info("Someone just used the 'Contact Us' form.")
         subject = "XSSHunter Contact Form Submission"
-        email_body = "Name: " + req["name"] + "\n"
-        email_body += "Email: " + req["email"] + "\n"
-        email_body += "Message: " + req["body"] + "\n"
+        email_body = "Name: " + self.get_argument("name", "") + "\n"
+        email_body += "Email: " + self.get_argument("email", "") + "\n"
+        email_body += "Message: " + self.get_argument("body", "") + "\n"
         self.send_email(options.abuse_email, subject, email_body)
         self.write({"success": True})
 
@@ -189,12 +194,3 @@ class HealthHandler(BaseHandler):
 
     def get(self):
         self.write({"status": "ok"})
-
-
-class LogoutHandler(BaseHandler):
-
-    def get(self):
-        self.logit("User is logging out.")
-        self.clear_cookie("session")
-        self.clear_cookie("csrf")
-        self.redirect("/")

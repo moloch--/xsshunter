@@ -14,7 +14,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from libs.database_connection import DatabaseConnection
 
 
-if options.db_debug:
+if options.debug_db:
 
     sql_logger = logging.getLogger('sqlalchemy.engine')
     sql_logger.setLevel(logging.INFO)
@@ -43,7 +43,7 @@ db_connection = DatabaseConnection(database=options.sql_database,
 # Setup the database session
 engine = create_engine(str(db_connection),
                        pool_recycle=options.sql_pool_recycle)
-setattr(engine, 'echo', options.db_debug)
+setattr(engine, 'echo', options.debug_db_echo)
 #  _Session = sessionmaker(bind=engine)
 
 # Main export

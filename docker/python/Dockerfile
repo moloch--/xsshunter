@@ -23,8 +23,8 @@ RUN echo \
 #
 RUN apt-get update --fix-missing && apt-get install -y build-essential
 ADD ./requirements.txt /tmp/requirements.txt
-RUN pip install --upgrade pip \
-  && pip install -r /tmp/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r /tmp/requirements.txt
 
 
 #

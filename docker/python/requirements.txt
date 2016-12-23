@@ -1,6 +1,8 @@
+pycparser
+cryptography
 tornado
 furl
-json-schema
+jsonschema
 sqlalchemy-utils
 SQLAlchemy
 backports-abc
@@ -11,7 +13,6 @@ cffi
 dnspython
 poster
 psycopg2
-pycparser
 singledispatch
 six
 wsgiref
