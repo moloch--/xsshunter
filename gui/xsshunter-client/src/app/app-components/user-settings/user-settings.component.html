@@ -1,0 +1,59 @@
+<div class="container">
+  <div class="page-header">
+    <h1>
+      <i class="fa fa-fw fa-gears"></i> Settings
+    </h1>
+  </div>
+  <div *ngIf="_user" class="row">
+    <div class="col-md-4">
+      <strong>Created:</strong> {{ _user.created | unixtime }} <br />
+      <strong>Team:</strong> {{ _user.team_name }}
+      <hr />
+
+      <alert *ngIf="_userSettingsForm.hasError('oldPasswordInvalid')" [type]="'danger'" dismissible="true">
+        <i class="fa fa-fw fa-exclamation-circle"></i>
+        You must enter your current password
+      </alert>
+
+      <alert *ngIf="_userSettingsForm.hasError('passwordMismatch')" [type]="'danger'" dismissible="true">
+        <i class="fa fa-fw fa-exclamation-circle"></i>
+        Confirm password does not match new password field
+      </alert>
+
+      <alert *ngIf="_settingsUpdated" [type]="'success'" dismissible="true" (close)="closedUpdated()">
+        <i class="fa fa-fw fa-user"></i>
+        Your settings have been updated
+      </alert>
+
+    </div>
+    <div class="col-md-8">
+      <form [formGroup]="_userSettingsForm" (ngSubmit)="saveSettings(_userSettingsForm.value)">
+        <div class="form-group">
+          <label for="email_address">Email Address</label>
+          <input [formControl]="_userSettingsForm.controls['email_address']" required class="form-control" type="text" placeholder="Email Address">
+        </div>
+        <div class="form-group">
+          <label for="password">New Password</label>
+          <input [formControl]="_userSettingsForm.controls['new_password']" class="form-control" type="password" placeholder="Password" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="password">Confirm Password</label>
+          <input [formControl]="_userSettingsForm.controls['confirm_password']" class="form-control" type="password" placeholder="Confirm Password"
+            autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Current Password</label>
+          <input [formControl]="_userSettingsForm.controls['old_password']" class="form-control" type="password" placeholder="Current Password"
+            autocomplete="off">
+        </div>
+
+        <button [disabled]="!_userSettingsForm.valid" class="btn btn-primary btn-block" type="submit">
+            <i class="fa fa-fw fa-save"></i>
+            Save
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>

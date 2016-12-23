@@ -1,0 +1,59 @@
+<div class="pull-left">
+  <h2 *ngIf="title">
+    <i *ngIf="faClass" [ngClass]="_faClassMap"></i>
+    {{ title }}
+  </h2>
+</div>
+<div class="pull-right">
+  <input *ngIf="enableFilter" [(ngModel)]="filterQuery" (keyup)="filter()" class="form-control"  type="text" placeholder="Filter" />
+</div>
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th *ngFor="let column of columns" (click)="sortBy(column)" >
+        <i *ngIf="_sortingKey === column.value && !_reverse" class="fa fa-fw fa-sort-amount-asc"></i>
+        <i *ngIf="_sortingKey === column.value && _reverse" class="fa fa-fw fa-sort-amount-desc"></i>
+        {{ column.header }}
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let row of _getData()" (click)="selectRow(row)">
+      <td *ngFor="let column of columns">
+        
+        <div *ngIf="column.lazyLoad && row[column.value] === undefined">
+          <i class="fa fa-fw fa-spin fa-refresh"></i>
+        </div>
+
+        <div *ngIf="!column.lazyLoad || row[column.value] !== undefined">
+          <div *ngIf="column.customRenderFunction && !column.fontAwesome">
+            {{ column.customRenderFunction(row[column.value]) }}
+          </div>
+          <div *ngIf="column.customContent">
+            <ng-content></ng-content>
+          </div>
+          <div *ngIf="column.fontAwesome">
+            <i [ngClass]="column.customRenderFunction(row[column.value])"></i>
+          </div>
+          <div *ngIf="column.boolean">
+            <i *ngIf="row[column.value]" class="fa fa-fw fa-check-square-o"></i>
+            <i *ngIf="!row[column.value]"  class="fa fa-fw fa-square-o"></i>
+          </div>
+          <div *ngIf="column.count">
+            {{ row[column.value].length }}
+          </div>
+          <div *ngIf="column.date">
+            {{ row[column.value] | unixtime }}
+          </div>
+          <div *ngIf="!column.customRenderFunction && !column.customContent && !column.fontAwesome && !column.boolean && !column.date && !column.count">
+            {{ row[column.value] }}
+          </div>
+        </div>
+
+      </td>
+    </tr>
+  </tbody>
+</table>
+<pagination [totalItems]="this.dataset.length" [(ngModel)]="_currentPage" [maxSize]="_maxPageSize" class="pagination-sm"
+            [boundaryLinks]="true" [rotate]="false" (numPages)="numPages = $event" (pageChanged)="_pageChanged($event)">
+</pagination>

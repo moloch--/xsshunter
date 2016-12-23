@@ -5,5 +5,10 @@
 
 export const environment = {
   production: false,
-  apiHost: 'localhost'
+  apiHost: 'local-api.xsshunter.com',
+
+  minPasswordLength: 16,
+
+  minUsernameLength: 3,
+  maxUsernameLength: 16
 };

@@ -1,0 +1,36 @@
+<div class="row">
+  <div class="col-md-4 col-md-offset-4">
+    <form [formGroup]="_loginForm" (ngSubmit)="loginAttempt(_loginForm.value)" class="form-signin">
+      <h2 class="form-signin-heading">
+        <i class="fa fa-fw fa-lock"></i>
+        Login
+      </h2>
+      <alert *ngIf="_invalidLogin" type="danger">
+        <i class="fa fa-fw fa-exclamation-circle"></i>
+        Invalid username or password
+      </alert>
+      <div class="input-group">
+        <div class="input-group-addon">
+          <i class="fa fa-fw fa-user"></i>
+        </div>
+        <input [formControl]="_loginForm.controls['username']" autofocus required id="username" class="form-control" type="text" placeholder="Username">
+      </div>
+      <div class="input-group">
+        <div class="input-group-addon">
+          <i class="fa fa-fw fa-key"></i>
+        </div>
+        <input [formControl]="_loginForm.controls['password']" name="password" required id="password" class="form-control" type="password" placeholder="Password" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <div class="input-group-addon">
+          <i class="fa fa-fw fa-shield"></i>
+        </div>
+        <input [formControl]="_loginForm.controls['otp']" name="otp" id="otp" class="form-control" type="password" placeholder="2FA Token (Optional)" autocomplete="off">
+      </div>
+      <button [disabled]="!_loginForm.valid" id="submit-button" class="btn btn-primary btn-block" type="submit">
+        <i class="fa fa-fw fa-sign-in"></i>
+        Authenticate
+      </button>
+    </form>
+  </div>
+</div>

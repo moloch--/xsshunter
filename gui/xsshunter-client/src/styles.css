@@ -1,1 +1,189 @@
 /* You can add global styles to this file, and also import other style files */
+/* You can add global styles to this file, and also import other style files */
+
+/* Main body padding */
+body {
+    padding-top: 50px;
+    padding-bottom: 40px;
+}
+
+.main {
+  padding: 20px;
+}
+@media (min-width: 768px) {
+  .main {
+    padding-right: 40px;
+    padding-left: 40px;
+  }
+}
+
+.main .page-header {
+  margin-top: 0;
+}
+
+/* Form valid/invalid */
+.ng-valid[required], .ng-valid.required  {
+  border-left: 5px solid #42A948; /* green */
+}
+
+.ng-invalid:not(form)  {
+  border-left: 5px solid #a94442; /* red */
+}
+
+
+/* Sidebar */
+.sidebar {
+  display: none;
+}
+@media (min-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 51px;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    display: block;
+    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+    background-color: #f5f5f5;
+    border-right: 1px solid #eee;
+  }
+}
+/* Sidebar navigation */
+.nav-sidebar {
+  margin-right: -21px; /* 20px padding + 1px border */
+  margin-bottom: 20px;
+  margin-left: -20px;
+}
+.nav-sidebar > li > a {
+  padding-right: 20px;
+  padding-left: 20px;
+}
+.nav-sidebar > .active > a,
+.nav-sidebar > .active > a:hover,
+.nav-sidebar > .active > a:focus {
+  color: #fff;
+  background-color: #428bca;
+}
+.sidebar-nav > .sidebar-brand {
+    height: 65px;
+    font-size: 18px;
+    line-height: 60px;
+}
+.sidebar-nav > .sidebar-brand a {
+}
+.sidebar-nav > .sidebar-brand a:hover {
+    background: none;
+}
+
+
+/* Fonts */
+@font-face {
+    font-family: "source-code-pro-black";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Black.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-pro-bold";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Bold.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-extra-light";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-ExtraLight.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-pro-light";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Light.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-pro-medium";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Medium.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-pro";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Regular.otf.woff") format('woff');
+}
+@font-face {
+    font-family: "source-code-pro-semibold";
+    src: url("/assets/fonts/source-code-pro/SourceCodePro-Semibold.otf.woff") format('woff');
+}
+
+.monospace {
+    font-family: "source-code-pro";
+}
+
+.monospace-sm {
+    font-family: "source-code-pro";
+    font-size: small;
+}
+
+.monospace-xs {
+    font-family: "source-code-pro";
+    font-size: x-small;
+}
+
+.monospace-light {
+    font-family: "source-code-pro-light";
+}
+
+.monospace-sm-light {
+    font-family: "source-code-pro-light";
+    font-size: small;
+}
+
+/* Bootstrap Callouts */
+.bs-callout {
+    padding: 20px;
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 3px;
+}
+.bs-callout h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+.bs-callout p:last-child {
+    margin-bottom: 0;
+}
+.bs-callout code {
+    border-radius: 3px;
+}
+.bs-callout+.bs-callout {
+    margin-top: -5px;
+}
+.bs-callout-default {
+    border-left-color: #090909;
+}
+.bs-callout-default h4 {
+    color: #090909;
+}
+.bs-callout-primary {
+    border-left-color: #1967be;
+}
+.bs-callout-primary h4 {
+    color: #1967be;
+}
+.bs-callout-success {
+    border-left-color: #3fb618;
+}
+.bs-callout-success h4 {
+    color: #3fb618;
+}
+.bs-callout-danger {
+    border-left-color: #ff0039;
+}
+.bs-callout-danger h4 {
+    color: #ff0039;
+}
+.bs-callout-warning {
+    border-left-color: #ff7518;
+}
+.bs-callout-warning h4 {
+    color: #ff7518;
+}
+.bs-callout-info {
+    border-left-color: #7e3f9d;
+}
+.bs-callout-info h4 {
+    color: #7e3f9d;
+}

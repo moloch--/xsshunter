@@ -1,0 +1,11 @@
+<label *ngIf="!_reading" class="input-group-btn">
+    <span class="btn btn-primary">
+        {{ _getText() }}&hellip; <input (change)="_changeListener($event)" type="file" style="display: none;">
+    </span>
+</label>
+<label *ngIf="_reading" class="input-group-btn">
+    <span class="btn btn-primary">
+        <i class="fa fa-fw fa-spin fa-refresh"></i>
+        Reading&hellip;
+    </span>
+</label>
