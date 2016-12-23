@@ -30,7 +30,6 @@ from models.base import DatabaseObject
 class User(DatabaseObject):
 
     DOMAIN_CHARS = digits + ascii_lowercase
-    EMAIL_REGEX = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
     LINUX_EPOCH = datetime(1970, 1, 1, 0, 0)
     MIN_PASSWORD_LENGTH = 1 if options.debug else 12
 
@@ -40,17 +39,38 @@ class User(DatabaseObject):
 
     FULL_NAME_LENGTH = 120
     _full_name = Column(Unicode(FULL_NAME_LENGTH))
+    FULL_NAME_SCHEMA = {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": FULL_NAME_LENGTH
+    }
 
     USERNAME_LENGTH = 80
     _username = Column(Unicode(USERNAME_LENGTH), unique=True, nullable=False)
+    USERNAME_SCHEMA = {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": USERNAME_LENGTH
+    }
 
     _password = Column(String(120))
 
     EMAIL_LENGTH = 120
     _email = Column(String(EMAIL_LENGTH), unqiue=True, nullable=False)
+    EMAIL_SCHEMA = {
+        "type": "string",
+        "format": "email",
+        "minLength": 1,
+        "maxLength": EMAIL_LENGTH
+    }
 
     DOMAIN_LENGTH = 32
     _domain = Column(String(DOMAIN_LENGTH), unqiue=True)
+    DOMAIN_SCHEMA = {
+        "type": "string",
+        "maxLength": DOMAIN_LENGTH,
+        "minLength": 1
+    }
 
     _pgp_key = Column(Text())
     _chainload_uri = Column(URLType())

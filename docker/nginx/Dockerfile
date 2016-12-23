@@ -62,7 +62,7 @@ RUN chmod +x ./setup_4.x \
 	&& rm -f ./setup_4.x
 RUN apt-get install -y nodejs
 RUN npm install -g npm@latest
-RUN npm install -g angular-cli@1.0.0-beta.16 && npm install -g is-my-json-valid
+RUN npm install -g angular-cli@1.0.0-beta.22-1 && npm install -g is-my-json-valid
 
 
 #

@@ -11,52 +11,23 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 from handlers.public_handlers import LoginHandler
-from handlers.public_handlers import LogoutHandler
 from handlers.public_handlers import RegisterHandler
 from handlers.public_handlers import ContactUsHandler
 from handlers.public_handlers import HealthHandler
 
 from handlers.user_handlers import HomepageHandler
-from handlers.user_handlers import UserInformationHandler
 
-from handlers.collection_handlers import CollectPageHandler
-from handlers.collection_handlers import CollectedPagesHandler
 
-from handlers.injection_handlers import InjectionHandler
-from handlers.injection_handlers import InjectionRequestHandler
-from handlers.injection_handlers import ResendInjectionEmailHandler
-
-from handlers.xss_handlers import XSSPayloadFiresHandler
-from handlers.xss_handlers import CallbackHandler
-
+API_V2 = "/api/v2"
 
 API_HANDLERS = [
 
     # Public handlers
-    (r"/api/register", RegisterHandler),
-    (r"/api/login", LoginHandler),
-    (r"/api/contactus", ContactUsHandler),
-    (r"/api/health", HealthHandler),
+    (API_V2 + r"/register", RegisterHandler),
+    (API_V2 + r"/login", LoginHandler),
+    (API_V2 + r"/contact", ContactUsHandler),
+    (API_V2 + r"/health", HealthHandler),
 
-    # Collection handlers
-    (r"/api/collected_pages", CollectedPagesHandler),
-    (r"/api/page_callback", CollectPageHandler),
-
-    # Injection handlers
-    (r"/api/injection", InjectionHandler),
-    (r"/api/record_injection", InjectionRequestHandler),
-    (r"/api/resend_injection_email", ResendInjectionEmailHandler),
-
-    # XSS handlers
-    (r"/api/payloadfires", XSSPayloadFiresHandler),
-    (r"/api/js_callback", CallbackHandler),
-
-    # Static file handlers
-    (r"/api/uploads/(.*)", StaticFileHandler, {"path": "uploads/"}),
-
-    # User handlers
-    (r"/api/user", UserInformationHandler),
-    (r"/api/(.*)", HomepageHandler),
 ]
 
 
@@ -65,7 +36,6 @@ def start_api_server():
     api_app = Application(
         handlers=API_HANDLERS,
         cookie_secret=options.cookie_secret,
-        xsrf_cookies=True,
         debug=options.debug)
     app_server = HTTPServer(api_app, xheaders=options.x_headers)
     app_server.listen(options.listen_port)

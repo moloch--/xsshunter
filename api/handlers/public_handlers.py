@@ -5,97 +5,123 @@ Copyright 2016
 """
 
 import json
-import os
-from datetime import datetime, timedelta
+import time
+from datetime import datetime
 
 from furl import furl
 from tornado.log import app_log
 from tornado.options import options
 
-from handlers.base import BaseHandler
+from handlers.base import APIBaseHandler
 from libs.decorators import json_api
 from libs.mixins import SendEmailMixin
 from libs.validation_errors import ValidationError
 from models.user import User
 
 
-class LoginHandler(BaseHandler):
+class BaseAuthenticationAPIHandler(APIBaseHandler):
+
+    AUTHENTICATION_TYPE = "base"
+    SESSION_EXPIRES = 3600 * 6
+
+    def post(self):
+        raise NotImplementedError()
+
+    def login_success(self, user):
+        """
+        Create a session and return it to the client, sessions are *not*
+        cookies, instead we use a an hmac'd JSON blob that we hand to
+        the client. The client includes this hmac'd blob in a header
+        `X-XSS-HUNTER` on all requests (including GETs).
+        """
+        app_log.info("Successful authentication request for %s", user.username)
+        user.last_login = datetime.utcnow()
+        self.dbsession.add(user)
+        self.dbsession.commit()
+        session = {
+            'user_id': user.id,
+            'expires': int(time.time()) + self.SESSION_EXPIRES,
+        }
+        session['ip_address'] = self.request.remote_ip
+        secure_session = self.create_signed_value(name="session",
+                                                  value=json.dumps(session))
+        # We put some data in here so the client can know when the session
+        # expires and what the user's name is, etc -but we never trust it.
+        # Server-side we only trust values from the hmac'd session `data`
+        resp = {
+            "username": user.username,
+            "password": None,
+            "data": secure_session,
+            "expires": int(session['expires']),
+        }
+        if options.debug:
+            resp["debug"] = bool(options.debug)
+        return resp
+
+    def login_failure(self):
+        """ Child class implements this """
+        raise NotImplementedError()
+
+
+
+class LoginHandler(BaseAuthenticationAPIHandler):
 
     """ Handles basic username/password logins """
 
     @json_api({
         "type": "object",
         "properites": {
-            "username": {"type": "string"},
+            "username": User.USERNAME_SCHEMA,
             "password": {"type": "string"},
             "otp": {"type": "string"}
         },
         "required": ["username", "password"]
     })
     def post(self, req):
-        user = User.by_username(req.get("username", ""))
+        user = User.by_username(self.get_argument("username", ""))
+
         if user is None:
-            User.hash_password(req.get("password", ""))
+            User.hash_password(self.get_argument("password", ""))
+            app_log.warn("Someone failed to log in as  %r", req["username"])
             raise ValidationError("Invalid username or password supplied")
-            app_log.warn("Someone failed to log in as  %r" % req["username"])
-            return
-        otp_valid = user.validateOtp(req.get("otp", "")) if user.opt_enabled else True
-        if otp_valid and user.compare_password(req.get("password", "")):
-            self.start_session(user)
-        raise ValidationError("Invalid username or password supplied")
-
-    def start_session(self, user):
-        """ Starts a session for the current user """
-        csrf_token = os.urandom(50).encode('hex')
-        user.last_login = datetime.utcnow()
-        self.dbsession.add(user)
-        self.dbsession.commit()
-        self.set_secure_cookie("session", json.dumps({
-            "user": user.id,
-            "expires": str(datetime.utcnow() + timedelta(days=1))
-        }), secure=True)
-        self.set_secure_cookie("csrf", csrf_token, secure=True)
-        self.write({
-            "success": True
-        })
+        otp_valid = user.validateOtp(self.get_argument("otp", "")) if user.opt_enabled else True
+        if otp_valid and user.compare_password(self.get_argument("password", "")):
+            self.login_success(user)
+        else:
+            raise ValidationError("Invalid username or password supplied")
 
 
-class RegisterHandler(BaseHandler):
+class RegisterHandler(APIBaseHandler):
 
     """ Creates a new user """
 
     @json_api({
         "type": "object",
         "properites": {
-            "username": {"type": "string"},
-            "password": {"type": "string"},
-            "domain": {"type": "string"}
+            "username": User.USERNAME_SCHEMA,
+            "email": User.EMAIL_SCHEMA,
+            "password": {
+                "type": "string",
+                "minLength": 1
+            },
+            "domain": {
+                "type": "string",
+                "maxLength": User.DOMAIN_LENGTH,
+                "minLength": 1
+            }
         },
-        "required": ["username", "password", "domain"]
+        "required": ["username", "email", "password", "domain"]
     })
     def post(self, req):
-        username = req.get("username", "")
+        username = self.get_argument("username", "")
         if User.by_username(username):
-            self.write({
-                "success": False,
-                "invalid_fields": ["username (already registered!)"],
-            })
+            raise ValidationError("Invalid username, already in use")
 
-        domain = req.get("domain", "")
+        domain = self.get_argument("domain", "")
         if User.by_domain(domain):
-            self.write({
-                "success": False,
-                "invalid_fields": ["domain (already registered!)"],
-            })
-            return
+            raise ValidationError("Domain is already registered")
 
-        password = req.get("password", "")
-        if len(password) < User.MIN_PASSWORD_LENGTH:
-            self.write({
-                "success": False,
-                "invalid_fields": ["password too short"]
-            })
-            return
+        password = self.get_argument("password", "")
 
         # add the new user to the database
         new_user = User(username=username, domain=domain, password=password)
@@ -107,14 +133,14 @@ class RegisterHandler(BaseHandler):
         })
 
 
-class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
+class RequestPasswordResetHandler(APIBaseHandler, SendEmailMixin):
 
     """ Handles password resets """
 
     @json_api({
         "type": "object",
         "properties": {
-            "username": {"type": "string"}
+            "username": User.USERNAME_SCHEMA
         },
         "required": ["username"]
     })
@@ -146,7 +172,7 @@ class RequestPasswordResetHandler(BaseHandler, SendEmailMixin):
         pass  # TODO: Create a template
 
 
-class PasswordResetHandler(BaseHandler):
+class PasswordResetHandler(APIBaseHandler):
 
     @json_api({
         "type": "object",
@@ -157,19 +183,19 @@ class PasswordResetHandler(BaseHandler):
         },
         "required": ["username", "password_reset_token", "new_password"]
     })
-    def post(self, req):
-        user = User.by_username(req.get("username", ""))
+    def post(self):
+        user = User.by_username(self.get_argument("username", ""))
         if user is not None:
-            token = req.get("password_reset_token", "")
+            token = self.get_argument("password_reset_token", "")
             if user.validate_password_reset_token(token):
-                user.password = req.get("new_password", "")
+                user.password = self.get_argument("new_password", "")
                 self.dbsession.add(user)
                 self.dbsession.commit()
                 self.write({"success": True})
         self.write({"success": False})
 
 
-class ContactUsHandler(BaseHandler, SendEmailMixin):
+class ContactUsHandler(APIBaseHandler, SendEmailMixin):
 
     @json_api({
         "type": "object",
@@ -190,7 +216,7 @@ class ContactUsHandler(BaseHandler, SendEmailMixin):
         self.write({"success": True})
 
 
-class HealthHandler(BaseHandler):
+class HealthHandler(APIBaseHandler):
 
     def get(self):
         self.write({"status": "ok"})

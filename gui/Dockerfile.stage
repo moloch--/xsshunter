@@ -38,7 +38,7 @@ RUN cd $(npm root -g)/npm \
 #
 WORKDIR /var/www/${APP_NAME}
 RUN npm install --unsafe-perm
-RUN ng build
+RUN ng build --prod --aot --environment=stage
 
 
 #
