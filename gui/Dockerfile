@@ -1,9 +1,9 @@
 #
 #  Dockerfile for XSS Hunter client
-#  v0.2.0 - By Moloch
 #
 FROM xsshunter_nginx:latest
 MAINTAINER moloch
+MAINTAINER mandatory
 ENV APP_NAME xsshunter-client
 
 
@@ -19,9 +19,11 @@ ADD . /var/www
 #
 WORKDIR /var/www
 
-RUN mv ./nginx/xsshunter /etc/nginx/sites-available/xsshunter
+RUN mv ./nginx/probe /etc/nginx/sites-available/probe \
+  && mv ./nginx/xsshunter /etc/nginx/sites-available/xsshunter
 RUN mv ./nginx/nginx.conf /etc/nginx/conf/nginx.conf && rm -rf ./nginx
-RUN ln -s /etc/nginx/sites-available/xsshunter /etc/nginx/sites-enabled/xsshunter
+RUN ln -s /etc/nginx/sites-available/xsshunter /etc/nginx/sites-enabled/xsshunter \
+  && ln -s /etc/nginx/sites-available/probe /etc/nginx/sites-enabled/probe
 
 
 #

