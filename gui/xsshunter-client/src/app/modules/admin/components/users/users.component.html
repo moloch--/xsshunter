@@ -1,0 +1,43 @@
+<div class="container">
+  <div class="page-header">
+    <h1>
+        <i class="fa fa-fw fa-users"></i>
+        Manage Users
+    </h1>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="row">
+        <div class="col-md-12">
+          <a [routerLink]="['/admin/add-user']" class="btn btn-success">
+            <i class="fa fa-fw fa-user-plus"></i>
+            Add User
+          </a>
+          <a [routerLink]="['/admin/add-team']" class="btn btn-success">
+            <i class="fa fa-fw fa-plus"></i>
+            Add Team
+          </a>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <datatable *ngIf="_users" [dataset]="_users" [enableFilter]="true" defaultSortingKey="name" (rowSelection)="selectUser($event.value)">
+            <column [value]="'created'" [header]="'Created'" date="true" sortable="true">
+            </column>
+            <column [value]="'team_name'" [header]="'Team Name'" sortable="true">
+            </column>
+            <column [value]="'name'" [header]="'Username'" sortable="true">
+            </column>
+            <column [value]="'email_address'" [header]="'Email Address'" sortable="true">
+            </column>
+            <column [value]="'is_admin'" [header]="'Is Admin'" boolean="true" sortable="true">
+              testing
+            </column>
+            <column [value]="'is_team_manager'" [header]="'Is Team Manager'" boolean="true" sortable="true">
+            </column>
+          </datatable>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

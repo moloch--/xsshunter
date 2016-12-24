@@ -1,0 +1,59 @@
+<div class="container">
+  <div class="page-header">
+    <h1>
+      <i class="fa fa-fw fa-user-plus"></i> Add User
+    </h1>
+  </div>
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <form [formGroup]="_addUserForm" (ngSubmit)="addUserAttempt(_addUserForm.value)">
+        <div class="form-group">
+          <label>Username</label>
+          <input [formControl]="_addUserForm.controls['name']" autofocus required name="name" class="form-control" type="text" placeholder="Username">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input [formControl]="_addUserForm.controls['email_address']" required name="emailAddress" class="form-control" type="text"
+            placeholder="Email Address">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input [formControl]="_addUserForm.controls['password']" required name="password" class="form-control" type="password" placeholder="Password"
+            autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input [formControl]="_addUserForm.controls['confirm_password']" required name="confirmPassword" class="form-control" type="password"
+            placeholder="Confirm Password" autocomplete="off">
+        </div>
+        <div *ngIf="_teams" class="form-group">
+          <label>Team</label>
+          <select [formControl]="_addUserForm.controls['team_id']" class="form-control">
+            <option [ngValue]="null"></option>
+            <option *ngFor="let team of _teams" [ngValue]="team.id">{{ team.name }}</option>                                             
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Permissions</label>
+          <div class="checkbox">
+            <label>
+              <input [formControl]="_addUserForm.controls['is_team_manager']" type="checkbox"> 
+              Team Manager
+            </label>
+          </div>
+          <div class="checkbox">
+            <label>
+              <input  [formControl]="_addUserForm.controls['is_admin']"  type="checkbox">
+              Administrator
+            </label>
+          </div>
+        </div>
+
+        <button [disabled]="!_addUserForm.valid" id="submit-button" class="btn btn-primary btn-block" type="submit">
+          <i class="fa fa-fw fa-user-plus"></i>
+          Add User
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

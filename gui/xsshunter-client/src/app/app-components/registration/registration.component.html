@@ -1,3 +1,79 @@
-<p>
-  registration works!
-</p>
+<div class="container">
+  <div class="row">
+    <div class="page-header col-md-6 col-md-offset-3">
+      <h1>
+        <i class="fa fa-fw fa-user-plus"></i>
+        Create a New Account
+      </h1>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <form [formGroup]="_newUserForm" (ngSubmit)="_createNewUserAttempt(_newUserForm.value)">
+        <div class="form-group">
+          <label>Username</label>
+          <input [formControl]="_newUserForm.controls['username']" autofocus required class="form-control" type="text" placeholder="ZeroCool">
+        </div>
+        <alert *ngIf="_newUserForm.controls['username'].touched && _newUserForm.controls['username'].hasError('minlength')" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          Username must be {{ _getMinUsernameLength() }} or more characters
+        </alert>
+
+        <div class="form-group">
+          <label>Personalized Subdomain</label>
+          <input [formControl]="_newUserForm.controls['subdomain']" required class="form-control monospace" type="text"
+            placeholder="your-domain.xss.ht">
+        </div>
+        <alert *ngIf="_newUserForm.controls['subdomain'].touched && _newUserForm.controls['subdomain'].hasError('isInvalidSubdomain')" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          Subdomains my only contain lower-case alpanumeric characters
+        </alert>
+
+        <div class="form-group">
+          <label>Email Address</label>
+          <input [formControl]="_newUserForm.controls['email']" required class="form-control" type="text"
+            placeholder="Email Address">
+        </div>
+        
+        <div class="form-group">
+          <label>Password</label>
+          <input [formControl]="_newUserForm.controls['password']" required class="form-control" type="password" placeholder="Password"
+            autocomplete="off">
+        </div>
+        <alert *ngIf="_newUserForm.controls['password'].touched && _newUserForm.controls['password'].hasError('minlength')" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          Password must be {{ _getMinPasswordLength() }} or more characters
+        </alert>
+
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input [formControl]="_newUserForm.controls['confirm_password']" required class="form-control" type="password"
+            placeholder="Confirm Password" autocomplete="off">
+        </div>
+        <alert *ngIf="_newUserForm.hasError('passwordMismatch')" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          Passwords do not match
+        </alert>
+
+        <div class="form-group">
+          <label>Are you a Cylon?</label>
+          <re-captcha (captchaResponse)="_setRecaptcha($event)" site_key="6Lc3qA8UAAAAABeZy7cxEZolKFTnOIl4-sy5ceP0"></re-captcha>
+        </div>
+        <alert *ngIf="_newUserForm.hasError('captchaRequired')" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          You must complete the CAPTCHA to register an account
+        </alert>
+
+        <alert *ngIf="_errorMessage" [type]="'danger'">
+          <i class="fa fa-fw fa-exclamation-triangle"></i>
+          {{ _errorMessage }}
+        </alert>
+
+        <button [disabled]="!_newUserForm.valid || _submitted" class="btn btn-primary btn-block" type="submit">
+          <i class="fa fa-fw fa-user-plus"></i>
+          Register Account
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

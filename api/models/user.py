@@ -5,6 +5,8 @@ Copyright 2016
 """
 
 import re
+import time
+
 from datetime import datetime, timedelta
 from hashlib import sha512
 from os import urandom
@@ -16,7 +18,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.hashes import SHA512
 from cryptography.hazmat.primitives.twofactor import InvalidToken
 from cryptography.hazmat.primitives.twofactor.totp import TOTP
-from furl import furl
 from sqlalchemy import Column
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.types import Boolean, DateTime, String, Text, Unicode
@@ -56,7 +57,7 @@ class User(DatabaseObject):
     _password = Column(String(120))
 
     EMAIL_LENGTH = 120
-    _email = Column(String(EMAIL_LENGTH), unqiue=True, nullable=False)
+    _email = Column(String(EMAIL_LENGTH), unique=True, nullable=False)
     EMAIL_SCHEMA = {
         "type": "string",
         "format": "email",
@@ -65,7 +66,7 @@ class User(DatabaseObject):
     }
 
     DOMAIN_LENGTH = 32
-    _domain = Column(String(DOMAIN_LENGTH), unqiue=True)
+    _domain = Column(String(DOMAIN_LENGTH), unique=True)
     DOMAIN_SCHEMA = {
         "type": "string",
         "maxLength": DOMAIN_LENGTH,
@@ -76,7 +77,7 @@ class User(DatabaseObject):
     _chainload_uri = Column(URLType())
     email_enabled = Column(Boolean, default=False)
     _locked = Column(Boolean, default=False)
-    last_login = Column(DateTime)
+    _last_login = Column(DateTime)
 
     _otp_enabled = Column(Boolean, default=False)
     _otp_secret = Column(EncryptedType(String(128), options.database_secret))
@@ -92,16 +93,9 @@ class User(DatabaseObject):
                               backref=backref("user", lazy="select"),
                               cascade="all,delete,delete-orphan")
 
-    collected_pages = relationship("CollectedPage",
-                                   backref=backref("user", lazy="select"),
-                                   cascade="all,delete,delete-orphan")
-
     permissions = relationship("Permission",
                                backref=backref("user", lazy="select"),
                                cascade="all,delete,delete-orphan")
-
-    # Done this way to allow users to just paste and share relative page lists
-    _page_collection_paths_list = Column(Text())
 
     @classmethod
     def by_domain(cls, domain):
@@ -215,10 +209,6 @@ class User(DatabaseObject):
     @email.setter
     def email(self, in_email):
         in_email = in_email.strip()
-        if re.search(self.EMAIL_REGEX, in_email, flags=0):
-            self._email = in_email
-        else:
-            raise ValueError("Not a valid email")
 
     @property
     def domain(self):
@@ -243,31 +233,12 @@ class User(DatabaseObject):
             self._domain = set_domain
 
     @property
-    def chainload_uri(self):
-        return self._chainload_uri
+    def last_login(self):
+        return time.mktime(self._last_login.timetuple())
 
-    @chainload_uri.setter
-    def chainload_uri(self, in_chainload_uri):
-        """ I've tightend this down to just HTTP/HTTPS Urls """
-        if len(in_chainload_uri) <= 3:
-            raise ValueError("URI too short")
-        malicious_url = furl(in_chainload_uri)
-        if malicious_url.scheme in ["http", "https"] and malicious_url.host:
-            self._chainload_uri = malicious_url
-        else:
-            raise ValueError("URI scheme must be http/https")
-
-    @property
-    def page_collection_paths_list(self):
-        if self.page_collection_paths_list is None:
-            return []
-        lines = self.page_collection_paths_list.split("\n")
-        page_list = [line.strip() for line in lines]
-        return filter(lambda line: line != "", page_list)
-
-    @page_collection_paths_list.setter
-    def page_collection_paths_list(self, in_paths_list_text):
-        self._page_collection_paths_list = in_paths_list_text.strip()
+    @last_login.setter
+    def last_login(self, value):
+        self._last_login = value
 
     @property
     def locked(self):
@@ -323,26 +294,25 @@ class User(DatabaseObject):
     @property
     def otp_provisioning_uri(self):
         """ Generate an enrollment URI for Authetnicator apps """
-        return self._otp.get_provisioning_uri(self.name, self.OTP_ISSUER)
+        return self._otp.get_provisioning_uri(self.username, self.OTP_ISSUER)
 
     def to_dict(self):
         return {
             "id": self.id,
-            "created": str(self.created),
+            "created": self.created,
             "full_name": self.full_name,
             "email": self.email,
             "username": self.username,
             "pgp_key": self.pgp_key,
             "domain": self.domain,
-            "email_enabled": self.email_enabled,
-            "chainload_uri": str(self.chainload_uri),
+            "email_enabled": self.email_enabled
         }
 
     def to_admin_dict(self):
         data = self.to_dict()
-        data["updated"] = str(self.updated)
+        data["updated"] = self.updated
         data["locked"] = self.locked
-        data["last_login"] = str(self.last_login)
+        data["last_login"] = self.last_login
         return data
 
     def __str__(self):

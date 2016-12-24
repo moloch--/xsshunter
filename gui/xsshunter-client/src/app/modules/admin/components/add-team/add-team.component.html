@@ -1,0 +1,25 @@
+<div class="container">
+  <div class="page-header">
+    <h1>
+        <i class="fa fa-fw fa-users"></i>
+        Add Team
+    </h1>
+  </div>
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+      <form [formGroup]="_addTeamForm" (ngSubmit)="addTeamAttempt(_addTeamForm.value)">
+        
+        <div class="form-group">
+          <label>Team Name</label>
+          <input [formControl]="_addTeamForm.controls['name']" autofocus required class="form-control" type="text" placeholder="Team Name">
+        </div>
+
+        <button [disabled]="!_addTeamForm.valid" class="btn btn-primary btn-block" type="submit">
+          <i class="fa fa-fw fa-plus"></i>
+          Add Team
+        </button>
+
+      </form>
+    </div>
+  </div>
+</div>

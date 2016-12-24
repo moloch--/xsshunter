@@ -11,12 +11,18 @@
           <i class="fa fa-fw fa-bug"></i> DEBUG
         </div>
         <div *ngIf="!isDebugMode()">
-          <i class="fa fa-fw fa-fire"></i> XSS Hunter
+          <i class="fa fa-fw fa-crosshairs"></i> XSS Hunter
         </div>
       </a>
     </div>
     <div class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
+        <li>
+          <a [routerLink]="['/features']">
+            <i class="fa fa-fw fa-list"></i>
+            Features
+          </a>
+        </li>
         <li>
           <a [routerLink]="['/login']">
             <i class="fa fa-fw fa-sign-in"></i>
@@ -30,6 +36,18 @@
           </a>
         </li>
       </ul>
+
+      <!-- right hand menu -->
+      <ul class="nav navbar-nav navbar-right">
+
+        <li>
+          <a [routerLink]="['/donate']">
+            <i class="fa fa-fw fa-heart"></i>
+            Donate
+          </a>
+        </li>
+      </ul><!--/.right hand menu -->
+    
     </div>
   </div>
 </div>
@@ -66,7 +84,7 @@
       <!--/.left hand menu -->
 
       <!-- right hand menu -->
-      <ul id="top-menu-rightnav" class="nav navbar-nav navbar-right">
+      <ul class="nav navbar-nav navbar-right">
 
         <li *ngIf="isAdmin()" class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -101,13 +119,21 @@
           <ul class="dropdown-menu">
             <li>
               <a [routerLink]="['/settings']">
-                <i class="fa fa-fw fa-cogs"></i> Settings
+                <i class="fa fa-fw fa-cogs"></i>
+                Settings
+              </a>
+            </li>
+            <li>
+              <a [routerLink]="['/donate']">
+                <i class="fa fa-fw fa-heart"></i>
+                Donate
               </a>
             </li>
             <li role="presentation" class="divider"></li>
             <li>
               <a [routerLink]="['/logout']">
-                <i class="fa fa-fw fa-sign-out"></i> Logout
+                <i class="fa fa-fw fa-sign-out"></i>
+                Logout
               </a>
             </li>
           </ul>

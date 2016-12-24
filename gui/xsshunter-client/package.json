@@ -20,6 +20,7 @@
     "@angular/platform-browser": "2.4.0",
     "@angular/platform-browser-dynamic": "2.4.0",
     "@angular/router": "3.4.0",
+    "angular2-recaptcha": "^0.3.6",
     "bootstrap": "^3.3.7",
     "bootswatch": "^3.3.7",
     "chart.js": "^2.4.0",

@@ -10,12 +10,7 @@ from tornado.options import options
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
-from handlers.public_handlers import LoginHandler
-from handlers.public_handlers import RegisterHandler
-from handlers.public_handlers import ContactUsHandler
-from handlers.public_handlers import HealthHandler
-
-from handlers.user_handlers import HomepageHandler
+from handlers import public_handlers
 
 
 API_V2 = "/api/v2"
@@ -23,10 +18,10 @@ API_V2 = "/api/v2"
 API_HANDLERS = [
 
     # Public handlers
-    (API_V2 + r"/register", RegisterHandler),
-    (API_V2 + r"/login", LoginHandler),
-    (API_V2 + r"/contact", ContactUsHandler),
-    (API_V2 + r"/health", HealthHandler),
+    (API_V2 + r"/registration", public_handlers.RegistrationHandler),
+    (API_V2 + r"/login", public_handlers.LoginHandler),
+    (API_V2 + r"/contact", public_handlers.ContactUsHandler),
+    (API_V2 + r"/health", public_handlers.HealthHandler),
 
 ]
 

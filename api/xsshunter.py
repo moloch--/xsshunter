@@ -98,6 +98,12 @@ define("cookie_secret",
        help="the cookie hmac secret",
        type=str)
 
+define("database_secret",
+       group="secret",
+       default=os.environ.get("XSSHUNTER_DATABASE_SECRET", os.urandom(32).encode("hex")),
+       help="the database secret",
+       type=str)
+
 
 # Debug options
 define("debug",

@@ -4,6 +4,8 @@ import { ModuleWithProviders } from '@angular/core';
 import { AuthN, AuthzAdmin } from './auth.guard';
 
 import { SplashComponent } from '../app-components/splash';
+import { DonateComponent } from '../app-components/donate';
+import { FeaturesComponent } from '../app-components/features';
 import { LoginComponent } from '../app-components/login';
 import { LogoutComponent } from '../app-components/logout';
 import { RegistrationComponent } from '../app-components/registration';
@@ -20,6 +22,8 @@ const routes: Routes = [
   { path: 'splash', component: SplashComponent, pathMatch: 'full' },
   { path: 'login', component: LoginComponent, pathMatch: 'full' },
   { path: 'register', component: RegistrationComponent, pathMatch: 'full' },
+  { path: 'donate', component: DonateComponent, pathMatch: 'full' },
+  { path: 'features', component: FeaturesComponent, pathMatch: 'full' },
   { path: 'logout', component: LogoutComponent, pathMatch: 'full' },
 
   /* Authenticated Routes */

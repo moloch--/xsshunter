@@ -16,7 +16,7 @@
       "mobile": false,
       "styles": [
         "../node_modules/bootstrap/dist/css/bootstrap.min.css",
-        "../node_modules/bootswatch/darkly/bootstrap.css",
+        "../node_modules/bootswatch/yeti/bootstrap.css",
         "../node_modules/font-awesome/css/font-awesome.css",
         "styles.css"
       ],

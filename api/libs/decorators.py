@@ -52,8 +52,7 @@ def json_api(schema):
             except (ValidationError, ValidationError) as error:
                 self.set_status(BAD_REQUEST)
                 self.write({
-                    "success": False,
-                    "errors": str(error)
+                    "error": str(error)
                 })
                 self.finish()
             except SchemaError as error:
@@ -61,13 +60,11 @@ def json_api(schema):
                 if options.debug:
                     logging.exception("Request triggered exception")
                     self.write({
-                        "success": False,
-                        "errors": str(error)
+                        "error": str(error)
                     })
                 else:
                     self.write({
-                        "success": False,
-                        "errors": "JSON request not formatted properly"
+                        "error": "JSON request not formatted properly"
                     })
                 self.finish()
         return wrapper
@@ -86,8 +83,7 @@ def authenticated(method):
             logging.debug("User from session does not exist")
         self.set_status(NOT_AUTHENTICATED)
         self.write({
-            "success": False,
-            "errors": "You are not authenticated"
+            "error": "You are not authenticated"
         })
     return wrapper
 
@@ -96,6 +92,7 @@ def authorized(permission):
     """ Checks user's permissions """
 
     def func(method):
+
         @functools.wraps(method)
         def wrapper(self, *args, **kwargs):
             user = self.get_current_user()
@@ -103,8 +100,9 @@ def authorized(permission):
                 return method(self, *args, **kwargs)
             else:
                 logging.warning("Rejecting unauthorized request from '%s'",
-                                user.name)
+                                user.username)
             self.set_status(NOT_AUTHORIZED)
-            self.write({"errors": ["You are not authorized"]})
+            self.write({"errors": "You are not authorized"})
         return wrapper
+
     return func

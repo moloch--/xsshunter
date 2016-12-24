@@ -4,10 +4,12 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { Ng2BootstrapModule, AlertModule } from 'ng2-bootstrap';
+import { ReCaptchaModule } from 'angular2-recaptcha';
 
 import { HttpClientService } from './core-services/http-client.service';
 import { WebSocketService } from './core-services/web-socket.service';
 import { UserSettingsService } from './services/user-settings.service';
+import { RegistrationService } from './services/registration.service';
 
 import { SharedModule } from './shared/module/shared.module'; 
 
@@ -22,6 +24,8 @@ import { HomeComponent } from './app-components/home/home.component';
 import { UserSettingsComponent } from './app-components/user-settings/user-settings.component';
 import { RegistrationComponent } from './app-components/registration/registration.component';
 import { SplashComponent } from './app-components/splash/splash.component';
+import { DonateComponent } from './app-components/donate/donate.component';
+import { FeaturesComponent } from './app-components/features/features.component';
 
 
 @NgModule({
@@ -36,6 +40,8 @@ import { SplashComponent } from './app-components/splash/splash.component';
     UserSettingsComponent,
     RegistrationComponent,
     SplashComponent,
+    DonateComponent,
+    FeaturesComponent,
   ],
   imports: [
     BrowserModule,
@@ -47,6 +53,7 @@ import { SplashComponent } from './app-components/splash/splash.component';
     Ng2BootstrapModule,
     AlertModule,
     
+    ReCaptchaModule,
 
     // Shared module
     SharedModule,
@@ -60,6 +67,7 @@ import { SplashComponent } from './app-components/splash/splash.component';
     RouterGuards,
 
     UserSettingsService,
+    RegistrationService
   ],
   bootstrap: [AppComponent]
 })

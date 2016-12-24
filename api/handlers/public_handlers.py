@@ -91,7 +91,7 @@ class LoginHandler(BaseAuthenticationAPIHandler):
             raise ValidationError("Invalid username or password supplied")
 
 
-class RegisterHandler(APIBaseHandler):
+class RegistrationHandler(APIBaseHandler):
 
     """ Creates a new user """
 
@@ -104,11 +104,9 @@ class RegisterHandler(APIBaseHandler):
                 "type": "string",
                 "minLength": 1
             },
-            "domain": {
-                "type": "string",
-                "maxLength": User.DOMAIN_LENGTH,
-                "minLength": 1
-            }
+            "confirm_password": {"type": "string"},
+            "domain": User.DOMAIN_SCHEMA,
+            "recaptch": {"type": "string"}
         },
         "required": ["username", "email", "password", "domain"]
     })
@@ -121,16 +119,15 @@ class RegisterHandler(APIBaseHandler):
         if User.by_domain(domain):
             raise ValidationError("Domain is already registered")
 
+        email_address = self.get_argument("email", "")
         password = self.get_argument("password", "")
 
         # add the new user to the database
-        new_user = User(username=username, domain=domain, password=password)
+        new_user = User(username=username, email=email_address, domain=domain, password=password)
         self.dbsession.add(new_user)
         self.dbsession.commit()
         app_log.info("New user successfully registered with username of %r", req["username"])
-        self.write({
-            "success": True
-        })
+        self.write(new_user.to_dict())
 
 
 class RequestPasswordResetHandler(APIBaseHandler, SendEmailMixin):

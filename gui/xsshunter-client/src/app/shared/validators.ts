@@ -3,6 +3,17 @@ import { FormControl } from '@angular/forms';
 import { environment } from '../../environments/environment';
 
 
+export class SubdomainValidators {
+
+  static isInvalidSubdomain(control: FormControl) {
+    if (control.value.length === 0) {
+      return null;
+    }
+    return /[^a-z\d]/.test(control.value) ? { isInvalidSubdomain: true } : null;
+  }
+
+}
+
 export class OtpValidators {
 
   static isInvalidOtp(control: FormControl) {
